@@ -15,7 +15,9 @@ namespace SimpleWeb {
                 const std::string& verify_file=std::string()) : 
                 ClientBase<HTTPS>::ClientBase(server_port_path, 443), context(boost::asio::ssl::context::tlsv12) {
             if(verify_certificate) {
-                context.set_verify_mode(boost::asio::ssl::verify_peer);
+//                context.set_verify_mode(boost::asio::ssl::verify_peer|);
+                context.set_verify_mode(boost::asio::ssl::verify_peer
+                                        | boost::asio::ssl::context::verify_fail_if_no_peer_cert);
                 context.set_default_verify_paths();
             }
             else
