@@ -27,8 +27,10 @@ int main() {
     //HTTPS-server at port 8080 using 1 thread
     //Unless you do more heavy non-threaded processing in the resources,
     //1 thread is usually faster than several threads
-    HttpsServer server(8080, 1, "certs/server_cert.pem", "certs/server_key.pem");
-    //Add resources using path-regex and method-string, and an anonymous function
+    HttpsServer server(8080, 1, "certs/server_cert.crt", "certs/server_key.pem",
+                       5, 300, "certs/demoCA/cacert.pem");
+
+//Add resources using path-regex and method-string, and an anonymous function
     //POST-example for the path /string, responds the posted string
     server.resource["^/string$"]["POST"]=[](shared_ptr<HttpsServer::Response> response, shared_ptr<HttpsServer::Request> request) {
         //Retrieve string:
@@ -37,7 +39,6 @@ int main() {
         //stringstream ss;
         //ss << request->content.rdbuf();
         //string content=ss.str();
-        
         *response << "HTTP/1.1 200 OK\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
     };
     
@@ -148,9 +149,14 @@ int main() {
     //Client examples
     //Second Client() parameter set to false: no certificate verification
 
-    HttpsClient client("localhost:8080", false);
-//                       "certs/server_cert.pem",
-//                       "certs/server_key.pem", "certs/server_cert.pem");
+    HttpsClient client("localhost:8080", true, "certs/client_cert.pem", "certs/client_key.pem",
+                       "certs/demoCA/cacert.pem");
+//    HttpsClient client("localhost:8080", false);
+//                       "certs/demoCA/cacert.pem");
+    // HttpsClient client("localhost:8080", true, 
+    //                    "client_cert.pem",
+    //                    "client_key.pem");
+        
     auto r1=client.request("GET", "/match/123");
     cout << r1->content.rdbuf() << endl;
 

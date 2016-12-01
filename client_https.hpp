@@ -3,6 +3,7 @@
 
 #include "client_http.hpp"
 #include <boost/asio/ssl.hpp>
+#include <boost/bind.hpp>
 
 namespace SimpleWeb {
     typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> HTTPS;
@@ -10,12 +11,26 @@ namespace SimpleWeb {
     template<>
     class Client<HTTPS> : public ClientBase<HTTPS> {
     public:
+        // bool verify_certificate(bool preverified, boost::asio::ssl::verify_context& ctx)
+        // {
+        //     char subject_name[256];
+        //     X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
+        //     X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
+        //     std::cout << "Verifying:\n" << subject_name << std::endl;
+
+        //     return preverified;
+        // }
+        
         Client(const std::string& server_port_path, bool verify_certificate=true, 
-                const std::string& cert_file=std::string(), const std::string& private_key_file=std::string(), 
-                const std::string& verify_file=std::string()) : 
-                ClientBase<HTTPS>::ClientBase(server_port_path, 443), context(boost::asio::ssl::context::tlsv12) {
+               const std::string& cert_file=std::string(), const std::string& private_key_file=std::string(), 
+               const std::string& verify_file=std::string()) : 
+            ClientBase<HTTPS>::ClientBase(server_port_path, 443), context(boost::asio::ssl::context::tlsv12) {
+
+
+            
             if(verify_certificate) {
-//                context.set_verify_mode(boost::asio::ssl::verify_peer|);
+//                context.set_verify_mode(boost::asio::ssl::verify_peer);
+//                context.set_verify_callback(boost::bind(&Client::verify_certificate, this, _1, _2));
                 context.set_verify_mode(boost::asio::ssl::verify_peer
                                         | boost::asio::ssl::context::verify_fail_if_no_peer_cert);
                 context.set_default_verify_paths();
@@ -46,31 +61,31 @@ namespace SimpleWeb {
                 }
                 resolver.async_resolve(*query, [this]
                                        (const boost::system::error_code &ec, boost::asio::ip::tcp::resolver::iterator it){
-                    if(!ec) {
-                        {
-                            std::lock_guard<std::mutex> lock(socket_mutex);
-                            socket=std::unique_ptr<HTTPS>(new HTTPS(io_service, context));
-                        }
+                                           if(!ec) {
+                                               {
+                                                   std::lock_guard<std::mutex> lock(socket_mutex);
+                                                   socket=std::unique_ptr<HTTPS>(new HTTPS(io_service, context));
+                                               }
                         
-                        boost::asio::async_connect(socket->lowest_layer(), it, [this]
-                                                   (const boost::system::error_code &ec, boost::asio::ip::tcp::resolver::iterator /*it*/){
-                            if(!ec) {
-                                boost::asio::ip::tcp::no_delay option(true);
-                                this->socket->lowest_layer().set_option(option);
-                            }
-                            else {
-                                std::lock_guard<std::mutex> lock(socket_mutex);
-                                this->socket=nullptr;
-                                throw boost::system::system_error(ec);
-                            }
-                        });
-                    }
-                    else {
-                        std::lock_guard<std::mutex> lock(socket_mutex);
-                        socket=nullptr;
-                        throw boost::system::system_error(ec);
-                    }
-                });
+                                               boost::asio::async_connect(socket->lowest_layer(), it, [this]
+                                                                          (const boost::system::error_code &ec, boost::asio::ip::tcp::resolver::iterator /*it*/){
+                                                                              if(!ec) {
+                                                                                  boost::asio::ip::tcp::no_delay option(true);
+                                                                                  this->socket->lowest_layer().set_option(option);
+                                                                              }
+                                                                              else {
+                                                                                  std::lock_guard<std::mutex> lock(socket_mutex);
+                                                                                  this->socket=nullptr;
+                                                                                  throw boost::system::system_error(ec);
+                                                                              }
+                                                                          });
+                                           }
+                                           else {
+                                               std::lock_guard<std::mutex> lock(socket_mutex);
+                                               socket=nullptr;
+                                               throw boost::system::system_error(ec);
+                                           }
+                                       });
                 io_service.reset();
                 io_service.run();
                 
@@ -82,14 +97,14 @@ namespace SimpleWeb {
                     auto timer=get_timeout_timer();
                     boost::asio::async_write(*socket, write_buffer,
                                              [this, timer](const boost::system::error_code &ec, size_t /*bytes_transferred*/) {
-                        if(timer)
-                            timer->cancel();
-                        if(ec) {
-                            std::lock_guard<std::mutex> lock(socket_mutex);
-                            socket=nullptr;
-                            throw boost::system::system_error(ec);
-                        }
-                    });
+                                                 if(timer)
+                                                     timer->cancel();
+                                                 if(ec) {
+                                                     std::lock_guard<std::mutex> lock(socket_mutex);
+                                                     socket=nullptr;
+                                                     throw boost::system::system_error(ec);
+                                                 }
+                                             });
                     io_service.reset();
                     io_service.run();
                     
@@ -104,14 +119,14 @@ namespace SimpleWeb {
                 auto timer=get_timeout_timer();
                 this->socket->async_handshake(boost::asio::ssl::stream_base::client,
                                               [this, timer](const boost::system::error_code& ec) {
-                    if(timer)
-                        timer->cancel();
-                    if(ec) {
-                        std::lock_guard<std::mutex> lock(socket_mutex);
-                        socket=nullptr;
-                        throw boost::system::system_error(ec);
-                    }
-                });
+                                                  if(timer)
+                                                      timer->cancel();
+                                                  if(ec) {
+                                                      std::lock_guard<std::mutex> lock(socket_mutex);
+                                                      socket=nullptr;
+                                                      throw boost::system::system_error(ec);
+                                                  }
+                                              });
                 io_service.reset();
                 io_service.run();
             }
