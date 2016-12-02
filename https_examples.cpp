@@ -1,6 +1,8 @@
 #include "server_https.hpp"
 #include "client_https.hpp"
 
+#include "logger.h"
+
 //Added for the json-example
 #define BOOST_SPIRIT_THREADSAFE
 #include <boost/property_tree/ptree.hpp>
@@ -27,6 +29,9 @@ int main() {
     //HTTPS-server at port 8080 using 1 thread
     //Unless you do more heavy non-threaded processing in the resources,
     //1 thread is usually faster than several threads
+
+    Logger::instance().set_options("server_%3N.log", 1 * 1024 * 1024, 10 * 1024 * 1024);
+    
     HttpsServer server(8080, 1, "certs/server_cert.crt", "certs/server_key.pem",
                        5, 300, "certs/demoCA/cacert.pem");
 
@@ -151,12 +156,7 @@ int main() {
 
     HttpsClient client("localhost:8080", true, "certs/client_cert.pem", "certs/client_key.pem",
                        "certs/demoCA/cacert.pem");
-//    HttpsClient client("localhost:8080", false);
-//                       "certs/demoCA/cacert.pem");
-    // HttpsClient client("localhost:8080", true, 
-    //                    "client_cert.pem",
-    //                    "client_key.pem");
-        
+    
     auto r1=client.request("GET", "/match/123");
     cout << r1->content.rdbuf() << endl;
 
@@ -166,9 +166,14 @@ int main() {
     
     auto r3=client.request("POST", "/json", json_string);
     cout << r3->content.rdbuf() << endl;
-    
+
+//    auto r4 = client.request("POST", "/file", "test");
+//    cout << r4->content.rdbuf() << endl;
+
+    auto r4=client.request("POST", "/upload", "test");
+    cout << r4->content.rdbuf() << endl;
+
     server_thread.join();
-    
     return 0;
 }
 

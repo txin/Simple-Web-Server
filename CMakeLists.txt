@@ -22,11 +22,17 @@ if(APPLE)
 endif()
 
 add_executable(http_examples http_examples.cpp)
+
 target_link_libraries(http_examples ${Boost_LIBRARIES})
 target_link_libraries(http_examples ${CMAKE_THREAD_LIBS_INIT})
 
 #TODO: add requirement for version 1.0.1g (can it be done in one line?)
+
 find_package(OpenSSL)
+
+add_library(logger logger.cc)
+target_link_libraries(http_examples ${Boost_LIBRARIES})
+
 
 if(OPENSSL_FOUND)
     include_directories(SYSTEM ${OPENSSL_INCLUDE_DIR})
@@ -35,7 +41,9 @@ if(OPENSSL_FOUND)
     target_link_libraries(https_examples ${Boost_LIBRARIES})
     target_link_libraries(https_examples ${OPENSSL_LIBRARIES})
     target_link_libraries(https_examples ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(https_examples logger)
 endif()
+
 
 if(MSYS) #TODO: Is MSYS true when MSVC is true?
     target_link_libraries(http_examples ws2_32 wsock32)
@@ -47,4 +55,5 @@ endif()
 enable_testing()
 add_subdirectory(tests)
 
-install(FILES server_http.hpp client_http.hpp server_https.hpp client_https.hpp DESTINATION include/simple-web-server)
+install(FILES server_http.hpp client_http.hpp server_https.hpp
+client_https.hpp logger.h DESTINATION include/simple-web-server)
