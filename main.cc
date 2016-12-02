@@ -46,9 +46,15 @@ int main() {
         //string content=ss.str();
         *response << "HTTP/1.1 200 OK\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
     };
+
+    server.resource["^/upload$"]["POST"]=[](shared_ptr<HttpsServer::Response> response, shared_ptr<HttpsServer::Request> request) {
+        //Retrieve string:
+        auto content=request->content.string();
+        *response << "HTTP/1.1 200 OK\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
+    };
     
     //POST-example for the path /json, responds firstName+" "+lastName from the posted json
-    //Responds with an appropriate error message if the posted json is not valid, or if firstName or lastName is missing
+    //Responds with an appropriate error message if the posted json is not valid, or if firstNa-me or lastName is missing
     //Example posted json:
     //{
     //  "firstName": "John",
@@ -63,9 +69,9 @@ int main() {
             string name=pt.get<string>("firstName")+" "+pt.get<string>("lastName");
 
             *response << "HTTP/1.1 200 OK\r\n"
-                      << "Content-Type: application/json\r\n"
-                      << "Content-Length: " << name.length() << "\r\n\r\n"
-                      << name;
+            << "Content-Type: application/json\r\n"
+            << "Content-Length: " << name.length() << "\r\n\r\n"
+            << name;
         }
         catch(exception& e) {
             *response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << strlen(e.what()) << "\r\n\r\n" << e.what();
@@ -98,10 +104,10 @@ int main() {
     //Get example simulating heavy work in a separate thread
     server.resource["^/work$"]["GET"]=[&server](shared_ptr<HttpsServer::Response> response, shared_ptr<HttpsServer::Request> /*request*/) {
         thread work_thread([response] {
-            this_thread::sleep_for(chrono::seconds(5));
-            string message="Work done";
-            *response << "HTTP/1.1 200 OK\r\nContent-Length: " << message.length() << "\r\n\r\n" << message;
-        });
+                this_thread::sleep_for(chrono::seconds(5));
+                string message="Work done";
+                *response << "HTTP/1.1 200 OK\r\nContent-Length: " << message.length() << "\r\n\r\n" << message;
+            });
         work_thread.detach();
     };
     
@@ -144,9 +150,9 @@ int main() {
     };
     
     thread server_thread([&server](){
-        //Start server
-        server.start();
-    });
+            //Start server
+            server.start();
+        });
     
     //Wait for server to start so that the client can connect
     this_thread::sleep_for(chrono::seconds(1));
@@ -167,10 +173,7 @@ int main() {
     auto r3=client.request("POST", "/json", json_string);
     cout << r3->content.rdbuf() << endl;
 
-//    auto r4 = client.request("POST", "/file", "test");
-//    cout << r4->content.rdbuf() << endl;
-
-    auto r4=client.request("POST", "/upload", "test");
+    auto r4 = client.request("POST", "/upload", "test");
     cout << r4->content.rdbuf() << endl;
 
     server_thread.join();
@@ -186,11 +189,11 @@ void default_resource_send(const HttpsServer &server, const shared_ptr<HttpsServ
         response->write(&buffer[0], read_length);
         if(read_length==static_cast<streamsize>(buffer.size())) {
             server.send(response, [&server, response, ifs](const boost::system::error_code &ec) {
-                if(!ec)
-                    default_resource_send(server, response, ifs);
-                else
-                    cerr << "Connection interrupted" << endl;
-            });
+                    if(!ec)
+                        default_resource_send(server, response, ifs);
+                    else
+                        cerr << "Connection interrupted" << endl;
+                });
         }
     }
 }

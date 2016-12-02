@@ -11,26 +11,14 @@ namespace SimpleWeb {
     template<>
     class Client<HTTPS> : public ClientBase<HTTPS> {
     public:
-        // bool verify_certificate(bool preverified, boost::asio::ssl::verify_context& ctx)
-        // {
-        //     char subject_name[256];
-        //     X509* cert = X509_STORE_CTX_get_current_cert(ctx.native_handle());
-        //     X509_NAME_oneline(X509_get_subject_name(cert), subject_name, 256);
-        //     std::cout << "Verifying:\n" << subject_name << std::endl;
-
-        //     return preverified;
-        // }
         
         Client(const std::string& server_port_path, bool verify_certificate=true, 
                const std::string& cert_file=std::string(), const std::string& private_key_file=std::string(), 
                const std::string& verify_file=std::string()) : 
             ClientBase<HTTPS>::ClientBase(server_port_path, 443), context(boost::asio::ssl::context::tlsv12) {
 
-
             
             if(verify_certificate) {
-//                context.set_verify_mode(boost::asio::ssl::verify_peer);
-//                context.set_verify_callback(boost::bind(&Client::verify_certificate, this, _1, _2));
                 context.set_verify_mode(boost::asio::ssl::verify_peer
                                         | boost::asio::ssl::context::verify_fail_if_no_peer_cert);
                 context.set_default_verify_paths();

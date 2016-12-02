@@ -64,4 +64,3 @@ namespace SimpleWeb {
 
 
 #endif	/* SERVER_HTTPS_HPP */
-
