@@ -1,15 +1,17 @@
-#include "server_https.hpp"
-#include "client_https.hpp"
+#include "server/server_https.hpp"
+#include "client/client_https.hpp"
 
-#include "logger.h"
+#include "common/logger.h"
 
 //Added for the json-example
 #define BOOST_SPIRIT_THREADSAFE
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/log/trivial.hpp>
 
 //Added for the default_resource example
 #include <fstream>
+#include <iostream>
 #include <boost/filesystem.hpp>
 #include <vector>
 #include <algorithm>
@@ -38,6 +40,7 @@ int main() {
 //Add resources using path-regex and method-string, and an anonymous function
     //POST-example for the path /string, responds the posted string
     server.resource["^/string$"]["POST"]=[](shared_ptr<HttpsServer::Response> response, shared_ptr<HttpsServer::Request> request) {
+        
         //Retrieve string:
         auto content=request->content.string();
         //request->content.string() is a convenience function for:
@@ -49,10 +52,51 @@ int main() {
 
     server.resource["^/upload$"]["POST"]=[](shared_ptr<HttpsServer::Response> response, shared_ptr<HttpsServer::Request> request) {
         //Retrieve string:
+        BOOST_LOG_TRIVIAL(trace) << "Upload resources content size" << (request->content).size();
+//        auto content_buf = request->content.gcount();
+//        auto size = request->content.
+        
+        std::string file_name;
+
+        for(auto& header: request->header) {
+            BOOST_LOG_TRIVIAL(trace) << header.first << ": " << header.second << "\n";
+            file_name = header.second;
+        }
+
+        // write file
+        std::ofstream m_output_file;
+        enum {Max_length = 40960};
+        std::array<char, Max_length> m_buf;
+        
+        m_output_file.open(file_name, std::ios_base::binary);
+//        m_output_file.write(m_buf.data(), static_cast<std::streamsize>(t_bytes_transferred));
+        do {
+            request->content.read(m_buf.data(), m_buf.size());
+            BOOST_LOG_TRIVIAL(trace) << __func__ << " write " << request->content.gcount() <<
+                " bytes.";
+            m_output_file.write(m_buf.data(), request->content.gcount());
+        } while (request->content.gcount() > 0);
+        
+        if (!m_output_file){
+            BOOST_LOG_TRIVIAL(error) << __LINE__ << ": Failed to create: "   << file_name;
+            return;
+        }
+        
+//        content_stream >> m_file_name;
+//        content_stream >> m_file_size;
+//        auto content=request->content.string();
+        BOOST_LOG_TRIVIAL(trace) << "Upload resources";
+        
+//        *response << "HTTP/1.1 200 OK\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
+//        BOOST_LOG_TRIVIAL(trace) << "Content length" << content.length();
+    };
+
+    server.resource["^/delegate$"]["POST"]=[](shared_ptr<HttpsServer::Response> response, shared_ptr<HttpsServer::Request> request) {
+        //Retrieve string:
         auto content=request->content.string();
         *response << "HTTP/1.1 200 OK\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
     };
-    
+
     //POST-example for the path /json, responds firstName+" "+lastName from the posted json
     //Responds with an appropriate error message if the posted json is not valid, or if firstNa-me or lastName is missing
     //Example posted json:
@@ -162,20 +206,21 @@ int main() {
 
     HttpsClient client("localhost:8080", true, "certs/client_cert.pem", "certs/client_key.pem",
                        "certs/demoCA/cacert.pem");
-    
+
     auto r1=client.request("GET", "/match/123");
     cout << r1->content.rdbuf() << endl;
-
+    
     string json_string="{\"firstName\": \"John\",\"lastName\": \"Smith\",\"age\": 25}";
     auto r2=client.request("POST", "/string", json_string);
     cout << r2->content.rdbuf() << endl;
-    
     auto r3=client.request("POST", "/json", json_string);
+
     cout << r3->content.rdbuf() << endl;
-
-    auto r4 = client.request("POST", "/upload", "test");
-    cout << r4->content.rdbuf() << endl;
-
+    // TODO: test this file
+    client.open_file("/home/tianxin/Documents/test.jpg");
+    // make request
+//    auto r4 = client.request("POST", "/upload", client.m_source_file);
+//    cout << r4->content.rdbuf() << endl;
     server_thread.join();
     return 0;
 }
