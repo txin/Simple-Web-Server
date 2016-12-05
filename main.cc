@@ -2,6 +2,7 @@
 #include "client/client_https.hpp"
 
 #include "common/logger.h"
+#include "common/file.h"
 
 //Added for the json-example
 #define BOOST_SPIRIT_THREADSAFE
@@ -53,42 +54,18 @@ int main() {
     server.resource["^/upload$"]["POST"]=[](shared_ptr<HttpsServer::Response> response, shared_ptr<HttpsServer::Request> request) {
         //Retrieve string:
         BOOST_LOG_TRIVIAL(trace) << "Upload resources content size" << (request->content).size();
-//        auto content_buf = request->content.gcount();
-//        auto size = request->content.
-        
         std::string file_name;
-
         for(auto& header: request->header) {
+            if (header.first == "FileName") {
+                file_name = header.second;
+            }
             BOOST_LOG_TRIVIAL(trace) << header.first << ": " << header.second << "\n";
-            file_name = header.second;
         }
 
-        // write file
-        std::ofstream m_output_file;
-        enum {Max_length = 40960};
-        std::array<char, Max_length> m_buf;
-        
-        m_output_file.open(file_name, std::ios_base::binary);
-//        m_output_file.write(m_buf.data(), static_cast<std::streamsize>(t_bytes_transferred));
-        do {
-            request->content.read(m_buf.data(), m_buf.size());
-            BOOST_LOG_TRIVIAL(trace) << __func__ << " write " << request->content.gcount() <<
-                " bytes.";
-            m_output_file.write(m_buf.data(), request->content.gcount());
-        } while (request->content.gcount() > 0);
-        
-        if (!m_output_file){
-            BOOST_LOG_TRIVIAL(error) << __LINE__ << ": Failed to create: "   << file_name;
-            return;
-        }
-        
-//        content_stream >> m_file_name;
-//        content_stream >> m_file_size;
-//        auto content=request->content.string();
-        BOOST_LOG_TRIVIAL(trace) << "Upload resources";
-        
-//        *response << "HTTP/1.1 200 OK\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
-//        BOOST_LOG_TRIVIAL(trace) << "Content length" << content.length();
+        write_file("web/upload/" + file_name, request);
+        BOOST_LOG_TRIVIAL(trace) << "Files have been uploaded.";
+        string str = "OK";
+        *response << "HTTP/1.1 200 OK\r\nContent-Length: " << str.length() << "\r\n\r\n" << str;
     };
 
     server.resource["^/delegate$"]["POST"]=[](shared_ptr<HttpsServer::Response> response, shared_ptr<HttpsServer::Request> request) {
@@ -127,7 +104,7 @@ int main() {
     server.resource["^/info$"]["GET"]=[](shared_ptr<HttpsServer::Response> response, shared_ptr<HttpsServer::Request> request) {
         stringstream content_stream;
         content_stream << "<h1>Request from " << request->remote_endpoint_address << " (" << request->remote_endpoint_port << ")</h1>";
-        content_stream << request->method << " " << request->path << " HTTP/" << request->http_version << "<br>";
+       content_stream << request->method << " " << request->path << " HTTP/" << request->http_version << "<br>";
         for(auto& header: request->header) {
             content_stream << header.first << ": " << header.second << "<br>";
         }
@@ -154,7 +131,33 @@ int main() {
             });
         work_thread.detach();
     };
-    
+
+
+    //Get example simulating heavy work in a separate thread
+    server.resource["^/upload$"]["GET"]=[&server](shared_ptr<HttpsServer::Response> response, shared_ptr<HttpsServer::Request> request) {
+
+//         auto content=request->content.string();
+        auto web_root_path=boost::filesystem::canonical("web");
+        auto file_name = request->content.string();
+        auto path = boost::filesystem::canonical(web_root_path/request->path/file_name);
+        auto ifs = make_shared<ifstream>();
+
+        ifs->open(path.string(), ifstream::in | ios::binary);
+            
+        if(*ifs) {
+            BOOST_LOG_TRIVIAL(trace) << "File is opened";
+            ifs->seekg(0, ios::end);
+            auto length=ifs->tellg();
+            ifs->seekg(0, ios::beg);
+            *response << "HTTP/1.1 200 OK\r\nContent-Length: " << length << "\r\n\r\n";
+            BOOST_LOG_TRIVIAL(trace) << "File length" << length;
+            default_resource_send(server, response, ifs);
+        }
+        else
+            throw invalid_argument("could not read file");
+        BOOST_LOG_TRIVIAL(trace) << "Download" << path;
+    };
+
     //Default GET-example. If no other matches, this anonymous function will be called. 
     //Will respond with content in the web/-directory, and its subdirectories.
     //Default file: index.html
@@ -209,18 +212,22 @@ int main() {
 
     auto r1=client.request("GET", "/match/123");
     cout << r1->content.rdbuf() << endl;
-    
     string json_string="{\"firstName\": \"John\",\"lastName\": \"Smith\",\"age\": 25}";
     auto r2=client.request("POST", "/string", json_string);
     cout << r2->content.rdbuf() << endl;
     auto r3=client.request("POST", "/json", json_string);
-
     cout << r3->content.rdbuf() << endl;
-    // TODO: test this file
+
+    // upload file
     client.open_file("/home/tianxin/Documents/test.jpg");
     // make request
-//    auto r4 = client.request("POST", "/upload", client.m_source_file);
-//    cout << r4->content.rdbuf() << endl;
+    BOOST_LOG_TRIVIAL(trace) << "finished uploading files";
+
+// download file
+    std::string file_name = "test.jpg";
+    auto r4 = client.request("GET", "/upload", file_name);
+    write_file("local/" + file_name, r4);
+    
     server_thread.join();
     return 0;
 }
