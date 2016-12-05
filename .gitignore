@@ -15,3 +15,6 @@ http_examples
 https_examples
 io_test
 parse_test
+
+# test files, images
+*.jpg
