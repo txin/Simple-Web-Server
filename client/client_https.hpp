@@ -38,8 +38,9 @@ namespace SimpleWeb {
                 context.load_verify_file(verify_file);
         }
 
-        void open_file(std::string const& t_path);
+        void check_in(std::string const& t_path, int flag);
         std::ifstream m_source_file;
+
         boost::asio::streambuf m_request;
         void send_file(const Client<HTTPS> &client, const std::shared_ptr<std::ifstream> &ifs);
         enum {Message_size = 1024};

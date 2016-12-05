@@ -55,14 +55,29 @@ int main() {
         //Retrieve string:
         BOOST_LOG_TRIVIAL(trace) << "Upload resources content size" << (request->content).size();
         std::string file_name;
+        int security_flag;
         for(auto& header: request->header) {
             if (header.first == "FileName") {
                 file_name = header.second;
             }
+            
+            if (header.first == "SecurityFlag") {
+                security_flag = header.second;
+            }
+            
             BOOST_LOG_TRIVIAL(trace) << header.first << ": " << header.second << "\n";
         }
 
+        if (flag == 0) {
+//plaintext
+            ;
+        }
+
         write_file("web/upload/" + file_name, request);
+
+        // Encrypt files.
+
+        
         BOOST_LOG_TRIVIAL(trace) << "Files have been uploaded.";
         string str = "OK";
         *response << "HTTP/1.1 200 OK\r\nContent-Length: " << str.length() << "\r\n\r\n" << str;
@@ -219,7 +234,8 @@ int main() {
     cout << r3->content.rdbuf() << endl;
 
     // upload file
-    client.open_file("/home/tianxin/Documents/test.jpg");
+    // 0 NONE, 1 CONFIDENTIALITY, 2, INTEGRITY
+    client.check_in("/home/tianxin/Documents/test.jpg", 0);
     // make request
     BOOST_LOG_TRIVIAL(trace) << "finished uploading files";
 

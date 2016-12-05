@@ -1,3 +1,4 @@
+#pragma once
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -11,6 +12,8 @@
 
 typedef SimpleWeb::Server<SimpleWeb::HTTPS> HttpsServer;
 typedef SimpleWeb::Client<SimpleWeb::HTTPS> HttpsClient;
+
+enum SecurityFlag{CONFIDENTIALITY, INTEGRITY, NONE};
 
 int write_file(std::string const& path, std::shared_ptr<HttpsServer::Request> request) {
     // write file
