@@ -17,14 +17,17 @@
 #include <cryptopp/rsa.h>
 #include <cryptopp/base64.h>
 #include <cryptopp/randpool.h>
+#include <cryptopp/hex.h>
 
 #include <assert.h>
 #include <string>
 
 
+#define D_KEY_SIZE 32 // default key size for symmetric key, bytes
+
 void encrypt_file_CBC_AES(CryptoPP::SecByteBlock key, CryptoPP::SecByteBlock iv,
                           const char *infile,
-                          const char* outfile );
+                          const char *outfile );
 
 void decrypt_file_CBC_AES(CryptoPP::SecByteBlock key, CryptoPP::SecByteBlock iv,
                           const char *infile,
@@ -44,15 +47,21 @@ void load_public_key(const std::string& file,
 void load_private_key(const std::string& file, 
                       CryptoPP::RSA::PrivateKey& key);
 
+void load_private_key(const std::string &file_name,
+                      CryptoPP::RSA::PrivateKey &sk, const char* pwd,
+                      size_t length);
 
 // decrypt with RSA
-void decrypt_file_RSA(std::string &recovered, std::string &file,
+void decrypt_string_RSA(std::string &recovered, const std::string &file,
                       CryptoPP::RandomNumberGenerator &rng,
                       CryptoPP::RSA::PrivateKey &sk);
 
-void encrypt_file_RSA(std::string &plain, std::string &file,
+void encrypt_string_RSA(const std::string &plain, const std::string &file,
                       CryptoPP::RandomNumberGenerator &rng,
                       CryptoPP::RSA::PublicKey &pk);
 
-void load_key_test();
+void encrypt_file_1(const std::string &in_file);
+
+void encrypt_file_2(const std::string &in_file);
+
 #endif

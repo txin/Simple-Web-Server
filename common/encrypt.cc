@@ -8,6 +8,7 @@
 
 using namespace CryptoPP;
 using namespace std;
+typedef unsigned char byte;
 
 void encrypt_file_CBC_AES(SecByteBlock key, SecByteBlock iv, const char *infile,
                           const char* outfile ) {
@@ -35,8 +36,9 @@ void decrypt_file_GCM_AES(SecByteBlock key, SecByteBlock iv, const char *infile,
     FileSource(infile, true, new AuthenticatedEncryptionFilter(dec, new FileSink(outfile)));
 }
 
+
 // encrypt with RSA public key
-void encrypt_file_RSA(std::string &plain, std::string &file,
+void encrypt_string_RSA(const std::string &plain, const std::string &file,
                       RandomNumberGenerator &rng,
                       RSA::PublicKey &pk) {
     RSAES<OAEP<SHA>>::Encryptor enc(pk);
@@ -48,7 +50,7 @@ void encrypt_file_RSA(std::string &plain, std::string &file,
 }
 
 // decrypt with RSA
-void decrypt_file_RSA(std::string &recovered, std::string &file,
+void decrypt_string_RSA(std::string &recovered, const std::string &file,
                       RandomNumberGenerator &rng,
                       RSA::PrivateKey &sk) {
 
@@ -69,10 +71,8 @@ void load_private_key(const std::string &file_name, RSA::PrivateKey &sk) {
     if(!valid) {
         cerr << "RSA private key is not valid" << endl; 
     } else {
-        BOOST_LOG_TRIVIAL(trace) << "RSA public key is valid";
+        BOOST_LOG_TRIVIAL(trace) << "RSA private key is valid";
     }
-    cout << "N:" << sk.GetModulus() << endl;
-    cout << "E:" << sk.GetPublicExponent() << endl;
 }
 
 void load_public_key(const string &file_name, CryptoPP::RSA::PublicKey &pk) {
@@ -86,6 +86,50 @@ void load_public_key(const string &file_name, CryptoPP::RSA::PublicKey &pk) {
     } else {
         BOOST_LOG_TRIVIAL(trace) << "RSA public key is valid";
     }
-    cout << "N:" << pk.GetModulus() << endl;
-    cout << "E:" << pk.GetPublicExponent() << endl;
+}
+
+
+void dump_key(SecByteBlock& ekey, string &key_str) {
+    // Print them
+    HexEncoder encoder(new StringSink(key_str));
+
+    cout << "AES key: ";
+    encoder.Put(ekey.data(), ekey.size());
+    encoder.MessageEnd(); cout << endl;
+}
+
+
+// confidentiality.
+// TODO: already been renamed.
+// use default string
+void encrypt_file_1(const string &in_file) {
+    CryptoPP::RSA::PublicKey pk;
+    CryptoPP::RSA::PrivateKey sk;    
+
+    load_public_key("certs/server_public.pem", pk);
+    load_private_key("certs/server_private.pem", sk);
+
+    AutoSeededRandomPool rnd;
+// Generate a random key for AES
+    SecByteBlock key(0x00, AES::DEFAULT_KEYLENGTH);
+    rnd.GenerateBlock(key, key.size());
+
+// Generate a random IV
+    SecByteBlock iv(0x00, AES::BLOCKSIZE);
+    rnd.GenerateBlock(iv, iv.size());
+    // TODO: crop out the name before the dot
+    const std::string out_file = in_file + ".bin";
+    encrypt_file_CBC_AES(key, iv, in_file.c_str(), out_file.c_str());
+    BOOST_LOG_TRIVIAL(trace) << "Finished encrypting file: " << out_file;
+    // encrypt the secret key
+    // store key, and iv seperately
+    const std::string key_out_file = in_file + ".key";
+    std::string token = std::string((const char*)key.data(), key.size());
+    encrypt_string_RSA(in_file, key_out_file, rnd, pk);
+    BOOST_LOG_TRIVIAL(trace) << "Finished encrypting key: " << key_out_file;
+}
+
+// integrity
+void encrypt_file_2(const string &file_name) {
+    
 }

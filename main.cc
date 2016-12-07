@@ -37,7 +37,7 @@ int main() {
 
     Logger::instance().set_options("server_%3N.log", 1 * 1024 * 1024, 10 * 1024 * 1024);
     
-    HttpsServer server(8080, 1, "certs/server_cert.crt", "certs/server_key.pem",
+    HttpsServer server(8080, 1, "certs/server_cert.crt", "certs/server_private.pem",
                        5, 300, "certs/demoCA/cacert.pem");
 
 //Add resources using path-regex and method-string, and an anonymous function
@@ -57,47 +57,49 @@ int main() {
 
     server.resource["^/upload$"]["POST"]=[](shared_ptr<HttpsServer::Response> response,
                                             shared_ptr<HttpsServer::Request> request) {
-        //Retrieve string:
-        BOOST_LOG_TRIVIAL(trace) << "Upload resources content size"
-        << (request->content).size();
-        std::string file_name;
-        int security_flag;
-        for(auto& header: request->header) {
-            if (header.first == "FileName") {
-                file_name = header.second;
-            }
-            if (header.first == "SecurityFlag") {
-                security_flag = std::stoi(header.second);
-            }
+        thread work_thread([response, request] {
+                //Retrieve string:
+                BOOST_LOG_TRIVIAL(trace) << "Upload resources content size"
+                                         << (request->content).size();
+                std::string file_name;
+                int security_flag;
+                for(auto& header: request->header) {
+                    if (header.first == "FileName") {
+                        file_name = header.second;
+                    }
+                    if (header.first == "SecurityFlag") {
+                        security_flag = std::stoi(header.second);
+                    }
             
-            BOOST_LOG_TRIVIAL(trace) << header.first << ": " << header.second << "\n";
-        }
+                    BOOST_LOG_TRIVIAL(trace) << header.first << ": " << header.second << "\n";
+                }
 
-        // Encrypt with the security flag.
-        CryptoPP::AutoSeededRandomPool rng;
-        CryptoPP::RSA::PrivateKey sk;
-        CryptoPP::RSA::PublicKey pk;
+                // Encrypt with the security flag.
+                CryptoPP::AutoSeededRandomPool rng;
+                CryptoPP::RSA::PrivateKey sk;
+                CryptoPP::RSA::PublicKey pk;
 
-        if (security_flag == 0) { //Plaintext
-            BOOST_LOG_TRIVIAL(trace) << "Security flag: NONE" ;
-        } else if (security_flag == 1) {
-            // Confidentiality
-            BOOST_LOG_TRIVIAL(trace) << "Security flag: CONFIDENTIALITY" ;
-            BOOST_LOG_TRIVIAL(trace) << "Load public key: ";
-            load_public_key("certs/server_public.pem", pk);
-        } else if (security_flag == 2) {
-            BOOST_LOG_TRIVIAL(trace) << "Security flag: INTEGRITY" ;
-            // Integrity
-        } else {
-            BOOST_LOG_TRIVIAL(error) << "Invalid security flag.";
-//            exit(1);
-        }
-        write_file("web/upload/" + file_name, request);
-        // Encrypt files.
-        BOOST_LOG_TRIVIAL(trace) << "Files have been uploaded.";
-        string str = "OK";
-        *response << "HTTP/1.1 200 OK\r\nContent-Length: " << str.length()
-        << "\r\n\r\n" << str;
+                write_file("web/upload/" + file_name, request);
+                BOOST_LOG_TRIVIAL(trace) << "Files have been uploaded.";
+        
+                if (security_flag == 0) { //Plaintext
+                    BOOST_LOG_TRIVIAL(trace) << "Security flag: NONE" ;
+                } else if (security_flag == 1) {
+                    // Confidentiality
+                    BOOST_LOG_TRIVIAL(trace) << "Security flag: CONFIDENTIALITY" ;
+                    // Generate a new key, encrypt
+                    encrypt_file_1("web/upload/test.jpg");
+                } else if (security_flag == 2) {
+                    BOOST_LOG_TRIVIAL(trace) << "Security flag: INTEGRITY" ;
+                    // Integrity
+                } else {
+                    BOOST_LOG_TRIVIAL(error) << "Invalid security flag.";
+                }
+                string str = "OK";
+                *response << "HTTP/1.1 200 OK\r\nContent-Length: " << str.length()
+                          << "\r\n\r\n" << str;
+            });
+        work_thread.detach();
     };
 
     server.resource["^/delegate$"]["POST"]=[](shared_ptr<HttpsServer::Response> response,
@@ -108,14 +110,6 @@ int main() {
         << "\r\n\r\n" << content;
     };
 
-    //POST-example for the path /json, responds firstName+" "+lastName from the posted json
-    //Responds with an appropriate error message if the posted json is not valid, or if firstNa-me or lastName is missing
-    //Example posted json:
-    //{
-    //  "firstName": "John",
-    //  "lastName": "Smith",
-    //  "age": 25
-    //}
     server.resource["^/json$"]["POST"]=[](shared_ptr<HttpsServer::Response> response,
                                           shared_ptr<HttpsServer::Request> request) {
         try {
@@ -142,7 +136,7 @@ int main() {
         stringstream content_stream;
         content_stream << "<h1>Request from " << request->remote_endpoint_address
         << " (" << request->remote_endpoint_port << ")</h1>";
-       content_stream << request->method << " " << request->path << " HTTP/"
+        content_stream << request->method << " " << request->path << " HTTP/"
         << request->http_version << "<br>";
 
         for(auto& header: request->header) {
@@ -259,7 +253,8 @@ int main() {
     //Client examples
     //Second Client() parameter set to false: no certificate verification
 
-    HttpsClient client("localhost:8080", true, "certs/client_cert.pem", "certs/client_key.pem",
+    HttpsClient client("localhost:8080", true,
+                       "certs/client_cert.pem", "certs/client_private.pem",
                        "certs/demoCA/cacert.pem");
 
     auto r1=client.request("GET", "/match/123");
@@ -296,11 +291,11 @@ void default_resource_send(const HttpsServer &server,
         if(read_length==static_cast<streamsize>(buffer.size())) {
             server.send(response,
                         [&server, response, ifs](const boost::system::error_code &ec) {
-                    if(!ec)
-                        default_resource_send(server, response, ifs);
-                    else
-                        cerr << "Connection interrupted" << endl;
-                });
+                            if(!ec)
+                                default_resource_send(server, response, ifs);
+                            else
+                                cerr << "Connection interrupted" << endl;
+                        });
         }
     }
 }
