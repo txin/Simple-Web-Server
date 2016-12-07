@@ -16,5 +16,8 @@ https_examples
 io_test
 parse_test
 
-# test files, images
+# test files, images, binary, keys
 *.jpg
+*.bin
+*.key
+*.pem
