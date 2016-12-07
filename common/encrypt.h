@@ -2,6 +2,7 @@
 #define ENCRYPT_H
 
 #include <cryptopp/cryptlib.h>
+#include <cryptopp/pem.h>
 // prime generator
 #include <cryptopp/nbtheory.h>
 #include <cryptopp/osrng.h>
@@ -15,10 +16,9 @@
 #include <cryptopp/filters.h>
 #include <cryptopp/rsa.h>
 #include <cryptopp/base64.h>
+#include <cryptopp/randpool.h>
 
 #include <assert.h>
-
-
 #include <string>
 
 

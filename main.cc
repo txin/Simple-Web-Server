@@ -66,7 +66,6 @@ int main() {
             if (header.first == "FileName") {
                 file_name = header.second;
             }
-            
             if (header.first == "SecurityFlag") {
                 security_flag = std::stoi(header.second);
             }
@@ -81,18 +80,18 @@ int main() {
 
         if (security_flag == 0) { //Plaintext
             BOOST_LOG_TRIVIAL(trace) << "Security flag: NONE" ;
-        } // else if (security_flag == 1) {
-//             // Confidentiality
-//             BOOST_LOG_TRIVIAL(trace) << "Security flag: CONFIDENTIALITY" ;
-//             BOOST_LOG_TRIVIAL(trace) << "Load public key: ";
-//             load_public_key("certs/server_cert.crt", pk);
-//         } else if (security_flag == 2) {
-//             BOOST_LOG_TRIVIAL(trace) << "Security flag: INTEGRITY" ;
-//             // Integrity
-//         } else {
-//             BOOST_LOG_TRIVIAL(error) << "Invalid security flag.";
-// //            exit(1);
-//         }
+        } else if (security_flag == 1) {
+            // Confidentiality
+            BOOST_LOG_TRIVIAL(trace) << "Security flag: CONFIDENTIALITY" ;
+            BOOST_LOG_TRIVIAL(trace) << "Load public key: ";
+            load_public_key("certs/server_public.pem", pk);
+        } else if (security_flag == 2) {
+            BOOST_LOG_TRIVIAL(trace) << "Security flag: INTEGRITY" ;
+            // Integrity
+        } else {
+            BOOST_LOG_TRIVIAL(error) << "Invalid security flag.";
+//            exit(1);
+        }
         write_file("web/upload/" + file_name, request);
         // Encrypt files.
         BOOST_LOG_TRIVIAL(trace) << "Files have been uploaded.";
@@ -190,7 +189,7 @@ int main() {
         auto file_name = request->content.string();
         auto path = boost::filesystem::canonical(web_root_path/request->path/file_name);
         auto ifs = make_shared<ifstream>();
-
+        
         ifs->open(path.string(), ifstream::in | ios::binary);
             
         if(*ifs) {
