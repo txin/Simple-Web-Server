@@ -105,7 +105,7 @@ void Client<HTTPS>::check_out(int fid) {
 void Client<HTTPS>::safe_delete(int fid) {
     std::map<std::string, std::string> header;
     header.insert(std::make_pair("UserName", username));    
-    request("POST", "/delegate", "No Content", header);
+    request("POST", "/delete", std::to_string(fid), header);
 }
 
 void Client<HTTPS>::end_session() {

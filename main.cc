@@ -78,6 +78,46 @@ int main() {
         work_thread.detach();
     };
 
+    server.resource["^/delete"]["POST"]=[global_ptr]
+        (shared_ptr<HttpsServer::Response> response,
+         shared_ptr<HttpsServer::Request> request) {
+//         auto content=request->content.string();
+        auto web_root_path=boost::filesystem::canonical("web");
+        int fid = std::stoi(request->content.string());
+
+// look up metadata
+        std::string user_name;
+        for (auto& header: request->header) {
+            if (header.first == "UserName") {
+                user_name = header.second;
+            }
+        }
+        std::string file_name;
+        bool allow_delete = global_ptr->lookup_delete(fid, user_name, file_name);
+        if (allow_delete) {
+            BOOST_LOG_TRIVIAL(trace) << "Removing file!!!!!!!!!! ";
+            string path_upload = "upload";
+            auto path = boost::filesystem::canonical(web_root_path/path_upload/file_name);
+            BOOST_LOG_TRIVIAL(trace) << "File removing: " << path;            
+            try {
+                if (boost::filesystem::exists(path)) {
+                    boost::filesystem::remove(path);
+                }
+            }  catch(boost::filesystem::filesystem_error const & e) {
+                BOOST_LOG_TRIVIAL(error) << e.what();
+            }
+            std::string str = "Server: File Removed";
+            *response << "HTTP/1.1 200 OK\r\nContent-Length: " << str.length()
+                      << "\r\n\r\n" << str;
+            
+            BOOST_LOG_TRIVIAL(trace) << "File removed: " << path;            
+        } else {
+            std::string str = "No checkout";
+            *response << "HTTP/1.1 200 OK\r\nContent-Length: " << str.length() << "\r\n\r\n"
+            << str;
+        }
+    };
+    
     server.resource["^/delegate$"]["POST"]=[](shared_ptr<HttpsServer::Response> response,
                                               shared_ptr<HttpsServer::Request> request) {
         thread work_thread([response, request] {
@@ -279,8 +319,8 @@ int main() {
 // checkout file
     int test_fid = 0;
     Alice.check_out(test_fid);
-    //Alice.end_session();
-//    Bob.end_session();
+    Alice.safe_delete(test_fid);    
+    Alice.close();
     
     server_thread.join();
     
