@@ -113,6 +113,7 @@ bool verify_delegation_request(std::shared_ptr<HttpsServer::Request> request) {
     std::string user_name, client_name;
     int fid;
     Rights t_right;
+    int time = 0;
 
     for (auto& header: request->header) {
         if (header.first == "FID") {
@@ -122,13 +123,15 @@ bool verify_delegation_request(std::shared_ptr<HttpsServer::Request> request) {
         } else if (header.first == "ClientName") {
             client_name = header.second;
         } else if (header.first == "check_in") {
-            t_right.check_in = true;
+            t_right.check_in = std::stoi(header.second);
         } else if (header.first == "check_out") {
-            t_right.check_out = true;
+            t_right.check_out = std::stoi(header.second);
         } else if (header.first == "is_delegate") {
-            t_right.is_delegate = true;
+            t_right.is_delegate = std::stoi(header.second);
         } else if  (header.first == "is_owner") {
-            t_right.is_delegate = true;
+            t_right.is_delegate = std::stoi(header.second);
+        } else if (header.first == "time") {
+            time = std::stoi(header.second);
         }
     }    
 
@@ -146,7 +149,7 @@ bool verify_delegation_request(std::shared_ptr<HttpsServer::Request> request) {
 
     if (result) {
         BOOST_LOG_TRIVIAL(trace) << "Update rights";
-        global_ptr->update_rights(fid, client_name, t_right);
+        global_ptr->update_rights(fid, client_name, t_right, time);
     }
 
     global_ptr->print_metadata();

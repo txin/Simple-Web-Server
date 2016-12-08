@@ -41,7 +41,7 @@ void Global::print_rights_str(Rights t_rights, std::string &out_str) {
        << ",Check_in: " << t_rights.check_in << ",Check_out: " << t_rights.check_out
        << ",Create_time: " << std::string(std::ctime(&(t_rights.create_time)))
        << ",Expire_time: " << std::string(std::ctime(&(t_rights.expire_time)))
-       << ",Propagate_flag"
+       << ",Propagate_flag: "
        << t_rights.propagate_flag << ",Is_owner: " << t_rights.is_owner
        << ",Is_delegate: " << t_rights.is_delegate << "]";
     out_str = ss.str();
@@ -74,7 +74,8 @@ bool Global::lookup_delegation(int t_fid, std::string &username) {
     return result;
 }
 
-void Global::update_rights(int t_fid, std::string clientname, Rights &t_rights) {
+void Global::update_rights(int t_fid, std::string clientname, Rights &t_rights,
+                           int time) {
     auto it = meta_map.find(t_fid);
 
     // definitely exists
@@ -82,14 +83,17 @@ void Global::update_rights(int t_fid, std::string clientname, Rights &t_rights) 
     Metadata t_data = it->second;
     auto it_2 = t_data.users_list.find(clientname);
     t_rights.username = clientname;
+
+
+    std::chrono::time_point<std::chrono::system_clock> start, end;
+    start = std::chrono::system_clock::now();
+    std::time_t timestamp = std::chrono::system_clock::to_time_t(start);
+
+    end = start + std::chrono::seconds(time);
+    std::time_t timestamp_new = std::chrono::system_clock::to_time_t(end);
+
+    t_rights.create_time = timestamp;
+    t_rights.expire_time = timestamp_new;
+    
     it->second.users_list.insert(std::make_pair(clientname, t_rights));
-
-    // if (it_2 != t_data.users_list.end()) {
-    //     // replace
-    //     it->second.users_linst.insert(std::make_pair(clientname, t_rights)) ;
-    // } else {
-    //     // new
-    //     it->second.users_list.insert(std::make_pair(clientname, t_rights));
-    // }
-
 }

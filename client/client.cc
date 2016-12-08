@@ -50,6 +50,8 @@ void Client<HTTPS>::delegate(int fid, const std::string &client_name,
     header.insert(std::make_pair("check_out", std::to_string(rights.check_out)));
     header.insert(std::make_pair("is_delegate", std::to_string(rights.is_delegate)));
     header.insert(std::make_pair("is_owner", std::to_string(rights.is_owner)));
+    header.insert(std::make_pair("time", std::to_string(time)));
+
     // Get message to sign
     std::chrono::time_point<std::chrono::system_clock> start, end;
     start = std::chrono::system_clock::now();
