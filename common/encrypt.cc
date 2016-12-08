@@ -114,7 +114,6 @@ void generate_key_store(const string &in_file, SecByteBlock &key, SecByteBlock &
     std::string iv_str = std::string((const char*)iv.data(), iv.size());
     StringSource ss(iv_str, true /* pump all */, new FileSink(iv_file.c_str(), true));
     BOOST_LOG_TRIVIAL(trace) << "Server: finished writing iv: " << iv_file;
-
     encrypt_string_RSA(key_str, key_out_file, rnd, pk);
     BOOST_LOG_TRIVIAL(trace) << "Server: finished encrypting key: " << key_out_file;
 }
@@ -139,3 +138,7 @@ void encrypt_file_2(const string &in_file, const RSA::PublicKey &pk) {
     encrypt_file_GCM_AES(key, iv, in_file.c_str(), out_file.c_str());
     BOOST_LOG_TRIVIAL(trace) << "Server: finished encrypting file (INTEGRITY): " << out_file;
 }
+
+// Write security flag, plain
+
+

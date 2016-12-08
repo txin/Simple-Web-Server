@@ -11,7 +11,7 @@
 
 using namespace SimpleWeb;
 
-void Client<HTTPS>::check_in(std::string const& t_path, int flag) {
+void Client<HTTPS>::check_in(std::string const& t_path, int uid, int flag) {
     m_source_file.open(t_path, std::ios_base::binary | std::ios_base::ate);
 
     if (m_source_file.fail()) {
@@ -20,6 +20,7 @@ void Client<HTTPS>::check_in(std::string const& t_path, int flag) {
 
     boost::filesystem::path p(t_path);
     std::map<std::string, std::string> header;
+    header.insert(std::make_pair("UID", std::to_string(uid)));
     header.insert(std::make_pair("FileName", p.filename().string()));
     header.insert(std::make_pair("SecurityFlag", std::to_string(flag)));
     request("POST", "/upload", m_source_file, header);

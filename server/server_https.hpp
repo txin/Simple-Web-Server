@@ -17,10 +17,10 @@ namespace SimpleWeb {
     class Server<HTTPS> : public ServerBase<HTTPS> {
     public:
         Server(unsigned short port, size_t num_threads, const std::string& cert_file, const std::string& private_key_file,
-                long timeout_request=5, long timeout_content=300,
-                const std::string& verify_file=std::string()) : 
-                ServerBase<HTTPS>::ServerBase(port, num_threads, timeout_request, timeout_content), 
-                context(boost::asio::ssl::context::tlsv12) { // 2016/08/13 only use tls12, see https://www.ssllabs.com/ssltest
+               long timeout_request=5, long timeout_content=300,
+               const std::string& verify_file=std::string()) : 
+            ServerBase<HTTPS>::ServerBase(port, num_threads, timeout_request, timeout_content), 
+            context(boost::asio::ssl::context::tlsv12) { // 2016/08/13 only use tls12, see https://www.ssllabs.com/ssltest
             // For mutual authentication.
             context.set_verify_mode(boost::asio::ssl::verify_peer);
 //                                    | boost::asio::ssl::context::verify_fail_if_no_peer_cert);
@@ -51,26 +51,26 @@ namespace SimpleWeb {
             auto socket=std::make_shared<HTTPS>(*io_service, context);
 
             acceptor->async_accept((*socket).lowest_layer(), [this, socket](const boost::system::error_code& ec) {
-                //Immediately start accepting a new connection (if io_service hasn't been stopped)
-                if (ec != boost::asio::error::operation_aborted)
-                    accept();
+                    //Immediately start accepting a new connection (if io_service hasn't been stopped)
+                    if (ec != boost::asio::error::operation_aborted)
+                        accept();
 
                 
-                if(!ec) {
-                    boost::asio::ip::tcp::no_delay option(true);
-                    socket->lowest_layer().set_option(option);
+                    if(!ec) {
+                        boost::asio::ip::tcp::no_delay option(true);
+                        socket->lowest_layer().set_option(option);
                     
-                    //Set timeout on the following boost::asio::ssl::stream::async_handshake
-                    auto timer=get_timeout_timer(socket, timeout_request);
-                    (*socket).async_handshake(boost::asio::ssl::stream_base::server, [this, socket, timer]
-                            (const boost::system::error_code& ec) {
-                        if(timer)
-                            timer->cancel();
-                        if(!ec)
-                            read_request_and_content(socket);
-                    });
-                }
-            });
+                        //Set timeout on the following boost::asio::ssl::stream::async_handshake
+                        auto timer=get_timeout_timer(socket, timeout_request);
+                        (*socket).async_handshake(boost::asio::ssl::stream_base::server, [this, socket, timer]
+                                                  (const boost::system::error_code& ec) {
+                                                      if(timer)
+                                                          timer->cancel();
+                                                      if(!ec)
+                                                          read_request_and_content(socket);
+                                                  });
+                    }
+                });
         }
     };
 }

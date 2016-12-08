@@ -56,12 +56,13 @@ int main() {
         << "\r\n\r\n" << content;
     };
 
-    server.resource["^/upload$"]["POST"]=[](shared_ptr<HttpsServer::Response> response,
+    CryptoPP::RSA::PublicKey server_pk;
+    load_public_key("certs/server_public.pem", server_pk);
+    
+    server.resource["^/upload$"]["POST"]=[server_pk]
+        (shared_ptr<HttpsServer::Response> response,
                                             shared_ptr<HttpsServer::Request> request) {
-        thread work_thread([response, request] {
-                CryptoPP::RSA::PublicKey server_pk;
-                load_public_key("certs/server_public.pem", server_pk);    
-
+        thread work_thread([response, request, server_pk] {
                 //Retrieve string:
                 BOOST_LOG_TRIVIAL(trace) << "Upload resources content size: "
                                          << (request->content).size();
@@ -77,11 +78,6 @@ int main() {
                     }
                     BOOST_LOG_TRIVIAL(trace) << header.first << ": " << header.second << "\n";
                 }
-
-                // Encrypt with the security flag.
-                CryptoPP::AutoSeededRandomPool rng;
-                CryptoPP::RSA::PrivateKey sk;
-                CryptoPP::RSA::PublicKey pk;
 
                 std::string new_file = "web/upload/" + file_name;
                 write_file(new_file, request);
@@ -270,8 +266,10 @@ int main() {
     cout << r3->content.rdbuf() << endl;
 
     // upload file
-    // 0 NONE, 1 CONFIDENTIALITY, 2, INTEGRITY
-    client.check_in("/home/tianxin/Documents/test.jpg", 1);
+    // uid
+    // security flag: 0 NONE, 1 CONFIDENTIALITY, 2, INTEGRITY
+    // TODO: same file_name
+    client.check_in("/home/tianxin/Documents/test.jpg", 0, 2);
     // make request
     BOOST_LOG_TRIVIAL(trace) << "finished uploading files";
 

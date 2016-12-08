@@ -38,7 +38,7 @@ namespace SimpleWeb {
                 context.load_verify_file(verify_file);
         }
 
-        void check_in(std::string const& t_path, int flag);
+        void check_in(std::string const& t_path, int uid, int flag);
         std::ifstream m_source_file;
 
         boost::asio::streambuf m_request;
