@@ -22,8 +22,8 @@ namespace SimpleWeb {
             ServerBase<HTTPS>::ServerBase(port, num_threads, timeout_request, timeout_content), 
             context(boost::asio::ssl::context::tlsv12) { // 2016/08/13 only use tls12, see https://www.ssllabs.com/ssltest
             // For mutual authentication.
-            context.set_verify_mode(boost::asio::ssl::verify_peer);
-//                                    | boost::asio::ssl::context::verify_fail_if_no_peer_cert);
+            context.set_verify_mode(boost::asio::ssl::verify_peer
+                                    | boost::asio::ssl::context::verify_fail_if_no_peer_cert);
 
             context.use_certificate_chain_file(cert_file);
             context.use_private_key_file(private_key_file, boost::asio::ssl::context::pem);
@@ -32,9 +32,8 @@ namespace SimpleWeb {
             if (verify_file.size() > 0) {
                 context.load_verify_file(verify_file);
             }
-
         }
-
+        bool verify_delegation_request();
     protected:
         boost::asio::ssl::context context;
 

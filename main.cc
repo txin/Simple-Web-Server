@@ -55,6 +55,7 @@ int main() {
         
         //Retrieve string:
         auto content=request->content.string();
+        
         //request->content.string() is a convenience function for:
         //stringstream ss;
         //ss << request->content.rdbuf();
@@ -80,8 +81,13 @@ int main() {
 
     server.resource["^/delegate$"]["POST"]=[](shared_ptr<HttpsServer::Response> response,
                                               shared_ptr<HttpsServer::Request> request) {
-        //Retrieve string:
         auto content=request->content.string();
+        // for (auto& header: request->header) {
+        //     content_stream << header.first << ": " << header.second << "<br>";
+        // }
+
+//Retrieve string:
+
         *response << "HTTP/1.1 200 OK\r\nContent-Length: " << content.length()
         << "\r\n\r\n" << content;
     };

@@ -42,6 +42,7 @@ namespace SimpleWeb {
             if (found_0 != std::string::npos && found_1 != std::string::npos) {
                 std::string folder_name = cert_file.substr(found_0 + 1,
                                                            found_1 - found_0 - 1);
+                username = folder_name;
                 BOOST_LOG_TRIVIAL(trace) << folder_name;
                 create_folder(folder_name.c_str());
             } else {
@@ -66,11 +67,13 @@ namespace SimpleWeb {
             }
         }
 
+        void start_session(const std::string &hostname);
         void check_in(const std::string & t_path, const std::string &username, int flag);
         void delegate(int fid, const std::string &client_name,
                       int time, bool propagation_flag);
         void safe_delete(int fid);
         void check_out(int fid);
+        void end_session();
         
 
         std::ifstream m_source_file;
@@ -81,6 +84,7 @@ namespace SimpleWeb {
         
     protected:
         boost::asio::ssl::context context;
+        std::string username;
         
         void connect() {
             if(!socket || !socket->lowest_layer().is_open()) {
