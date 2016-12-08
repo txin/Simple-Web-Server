@@ -1,4 +1,5 @@
 #include "server/server_https.hpp"
+#include "server/global.h"
 #include "client/client_https.hpp"
 
 #include "common/logger.h"
@@ -25,12 +26,18 @@ using namespace boost::property_tree;
 typedef SimpleWeb::Server<SimpleWeb::HTTPS> HttpsServer;
 typedef SimpleWeb::Client<SimpleWeb::HTTPS> HttpsClient;
 
+Global *global_ptr = 0;
+
 //Added for the default_resource example
 void default_resource_send(const HttpsServer &server,
                            const shared_ptr<HttpsServer::Response> &response,
                            const shared_ptr<ifstream> &ifs);
 
 int main() {
+    if (!global_ptr) {
+        global_ptr = new Global;
+    }
+    
     //HTTPS-server at port 8080 using 1 thread
     //Unless you do more heavy non-threaded processing in the resources,
     //1 thread is usually faster than several threads
