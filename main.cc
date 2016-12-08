@@ -262,7 +262,6 @@ int main() {
 //     auto r4 = client.request("GET", "/upload", file_name);
 //     write_file("local/" + file_name, r4);
 
-
 // Alice.check_out();
 // Alice.end_session()    ;
     server_thread.join();

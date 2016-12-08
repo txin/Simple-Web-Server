@@ -53,15 +53,16 @@ public:
 
         t_right.propagate_flag = true;
         t_right.is_owner = true;
+        t_right.is_delegate = false;
 
-        users_list.push_back(t_right);
+        users_list.insert(std::make_pair(username, t_right));
     }
 
     std::string request_file_name;
     std::string uid_file_name; //unique
     int fid;
     int security_flag; // 0, 1, 2
-    std::vector<Rights> users_list;
+    std::unordered_map<std::string, Rights> users_list;
 
     void set_fid(int t_fid) {
         fid = t_fid;
@@ -69,10 +70,12 @@ public:
 };
 
 class Global {
-    std::unordered_multimap<std::string, Metadata> meta_map;
+
     int fid_ctr;
     
 public:
+    std::unordered_map<int, Metadata> meta_map;
+
     Global() {fid_ctr = 0;}
 
     int get_fid() {
@@ -80,20 +83,24 @@ public:
     }
     
     void insert_meta(Metadata t_meta) {
-        meta_map.insert(std::make_pair(t_meta.request_file_name, t_meta));
+//        meta_map.insert(meta_map.begin() + idx, t_meta);
+        meta_map.insert(std::make_pair(t_meta.fid, t_meta));
     }
     
-    bool lookup_meta(const std::string &file_name) {
+    bool lookup_meta(int fid) {
         bool result = false;
-        if (meta_map.count(file_name) > 0) {
+        if (meta_map.count(fid) > 0) {
             result = true;
         }
         return result;
     }
+    
+    bool lookup_delegation(int t_fid, std::string &username);
     void print_metadata();
     void print_vector(std::string list_name, std::vector<std::string> &list);
-    void print_users_list(std::vector<Rights> &list);
+    void print_users_list(std::unordered_map<std::string, Rights> &list);
     void print_rights_str(Rights t_rights, std::string &out_str);
+    void update_rights(int t_fid, std::string clientname, Rights t_rights);
 };
 
 extern Global *global_ptr;

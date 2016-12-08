@@ -46,8 +46,9 @@ int write_file(std::shared_ptr<HttpsServer::Request> request,
     t_meta.set_fid(global_ptr->get_fid());
     global_ptr->insert_meta(t_meta);
 
-    const std::string lookup_file = "test.jpg";
-    BOOST_LOG_TRIVIAL(trace) << "Lookup: " << global_ptr->lookup_meta(lookup_file);
+    int lookup_fid = 0;
+    BOOST_LOG_TRIVIAL(trace) << "Lookup: FID=" << lookup_fid << ": "
+                             << global_ptr->lookup_meta(lookup_fid);
         
     if (security_flag == 0) { //Plaintext
         BOOST_LOG_TRIVIAL(trace) << "Security flag: NONE" ;
@@ -107,11 +108,12 @@ void create_folder(const char* name) {
 }
 
 bool verify_delegation_request(std::shared_ptr<HttpsServer::Request> request) {
-    bool result = false;
+    bool result;
 
     std::string user_name, client_name;
     int fid;
-    
+    Rights t_right;
+
     for (auto& header: request->header) {
         if (header.first == "FID") {
             fid = std::stoi(header.second);
@@ -119,16 +121,36 @@ bool verify_delegation_request(std::shared_ptr<HttpsServer::Request> request) {
             user_name = header.second;
         } else if (header.first == "ClientName") {
             client_name = header.second;
+        } else if (header.first == "Rights") {
+            client_name = header.second;
+        } else if (header.first == "check_in") {
+            t_right.check_in = true;
+        } else if (header.first == "check_out") {
+            t_right.check_out = true;
+        } else if (header.first == "is_delegate") {
+            t_right.is_delegate = true;
+        } else if  (header.first == "is_owner") {
+            t_right.is_delegate = true;
         }
-    }
+    }    
 
     BOOST_LOG_TRIVIAL(trace) << "Delegation request:" << " FID: " << fid
                              << ", from UserName: " << user_name
                              << ", ClientName: " << client_name;
-    return result;
-    // First check metadata
-    // Then verify the delegation file
+
+    result = global_ptr->lookup_delegation(fid, user_name);
+    
     // load public file
+    // decrypt signature to ge time_frame
     // finally update the meta file for delegation list and also expiration time
-    // update metafile
+        
+// update Rights
+
+    BOOST_LOG_TRIVIAL(trace) << "Update rights";
+    if (result) {
+        global_ptr->update_rights(fid, client_name, t_right);
+    }
+
+    global_ptr->print_metadata();
+    return result;
 }
