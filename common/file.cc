@@ -121,8 +121,6 @@ bool verify_delegation_request(std::shared_ptr<HttpsServer::Request> request) {
             user_name = header.second;
         } else if (header.first == "ClientName") {
             client_name = header.second;
-        } else if (header.first == "Rights") {
-            client_name = header.second;
         } else if (header.first == "check_in") {
             t_right.check_in = true;
         } else if (header.first == "check_out") {
@@ -146,8 +144,8 @@ bool verify_delegation_request(std::shared_ptr<HttpsServer::Request> request) {
         
 // update Rights
 
-    BOOST_LOG_TRIVIAL(trace) << "Update rights";
     if (result) {
+        BOOST_LOG_TRIVIAL(trace) << "Update rights";
         global_ptr->update_rights(fid, client_name, t_right);
     }
 

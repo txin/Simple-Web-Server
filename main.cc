@@ -255,7 +255,13 @@ int main() {
 // make request
     BOOST_LOG_TRIVIAL(trace) << "finished uploading files";
     global_ptr->print_metadata();
-    Alice.delegate(0, "Bob", 10000, false);
+
+
+    Rights test_rights;
+
+    test_rights.is_delegate = true;
+    test_rights.check_in = true;
+    Alice.delegate(0, "Bob", test_rights, 10000, false);
     
 // // download file
 //     std::string file_name = "test.jpg";
@@ -265,6 +271,7 @@ int main() {
 // Alice.check_out();
 // Alice.end_session()    ;
     server_thread.join();
+    
     return 0;
 }
 

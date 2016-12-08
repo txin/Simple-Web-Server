@@ -74,21 +74,22 @@ bool Global::lookup_delegation(int t_fid, std::string &username) {
     return result;
 }
 
-void Global::update_rights(int t_fid, std::string clientname, Rights t_rights) {
+void Global::update_rights(int t_fid, std::string clientname, Rights &t_rights) {
     auto it = meta_map.find(t_fid);
 
     // definitely exists
 
     Metadata t_data = it->second;
-
     auto it_2 = t_data.users_list.find(clientname);
-    if (it_2 != t_data.users_list.end()) {
-        // replace
-        it_2->second = t_rights;
-    } else {
-        // new
-        t_data.users_list.insert(std::make_pair(clientname, t_rights));
-    }
+    t_rights.username = clientname;
+    it->second.users_list.insert(std::make_pair(clientname, t_rights));
 
+    // if (it_2 != t_data.users_list.end()) {
+    //     // replace
+    //     it->second.users_linst.insert(std::make_pair(clientname, t_rights)) ;
+    // } else {
+    //     // new
+    //     it->second.users_list.insert(std::make_pair(clientname, t_rights));
+    // }
 
 }

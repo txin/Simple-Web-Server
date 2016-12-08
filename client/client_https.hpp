@@ -4,13 +4,17 @@
 #include <fstream>
 #include <iostream>
 
+#include "../common/type.h"
+
 #include "client_http.hpp"
+
 #include <boost/asio/ssl.hpp>
 #include <boost/bind.hpp>
 
+
 namespace SimpleWeb {
     typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> HTTPS;
-    
+
     template<>
     class Client<HTTPS> : public ClientBase<HTTPS> {
     public:
@@ -70,6 +74,7 @@ namespace SimpleWeb {
         void start_session(const std::string &hostname);
         void check_in(const std::string & t_path, const std::string &username, int flag);
         void delegate(int fid, const std::string &client_name,
+                      Rights &rights,
                       int time, bool propagation_flag);
         void safe_delete(int fid);
         void check_out(int fid);

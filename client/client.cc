@@ -39,12 +39,17 @@ void Client<HTTPS>::check_in(std::string const& t_path,
 }
 
 void Client<HTTPS>::delegate(int fid, const std::string &client_name,
+                             Rights &rights,
                              int time, bool propagation_flag) {
+
     std::map<std::string, std::string> header;
     header.insert(std::make_pair("FID", std::to_string(fid)));
     header.insert(std::make_pair("UserName", username));
     header.insert(std::make_pair("ClientName", client_name));
-
+    header.insert(std::make_pair("check_in", std::to_string(rights.check_in)));
+    header.insert(std::make_pair("check_out", std::to_string(rights.check_out)));
+    header.insert(std::make_pair("is_delegate", std::to_string(rights.is_delegate)));
+    header.insert(std::make_pair("is_owner", std::to_string(rights.is_owner)));
     // Get message to sign
     std::chrono::time_point<std::chrono::system_clock> start, end;
     start = std::chrono::system_clock::now();

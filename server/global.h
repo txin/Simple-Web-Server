@@ -2,6 +2,8 @@
 #define GLOBAL_H
 
 #include "../common/file.h"
+#include "../common/type.h"
+
 #include <unordered_map>
 #include <boost/log/trivial.hpp>
 
@@ -11,19 +13,6 @@
 
 #include <ctime>
 #include <chrono>
-
-typedef struct {
-    std::string username;
-    bool check_in;
-    bool check_out;
-
-    std::time_t expire_time;
-    std::time_t create_time;
-        
-    bool propagate_flag;
-    bool is_owner;
-    bool is_delegate;
-} Rights;
 
 // Each file is associated with some metadata
 class Metadata {
@@ -100,7 +89,7 @@ public:
     void print_vector(std::string list_name, std::vector<std::string> &list);
     void print_users_list(std::unordered_map<std::string, Rights> &list);
     void print_rights_str(Rights t_rights, std::string &out_str);
-    void update_rights(int t_fid, std::string clientname, Rights t_rights);
+    void update_rights(int t_fid, std::string clientname, Rights &t_rights);
 };
 
 extern Global *global_ptr;
