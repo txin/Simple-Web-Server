@@ -10,8 +10,10 @@
 #include <boost/log/trivial.hpp>
 
 #include "client_https.hpp"
+
 #include "../common/logger.h"
 #include "../common/encrypt.h"
+#include "../common/file.h"
 
 #include <cryptopp/pssr.h>
 
@@ -91,14 +93,23 @@ void Client<HTTPS>::delegate(int fid, const std::string &client_name,
                                              signature.size()), header);
 }
 
-void Client<HTTPS>::safe_delete(int fid) {
-//    request("POST", "/delegate", "No Content", header);
+void Client<HTTPS>::check_out(int fid) {
+    std::map<std::string, std::string> header;
+    header.insert(std::make_pair("UserName", username));    
+    auto response = request("GET", "/upload", std::to_string(fid), header);
+    std::string file_name = "temp";
+//    global_ptr->lookup_check_out(fid, username, file_name);
+    write_file(username + "/" + file_name, response);
 }
 
-void Client<HTTPS>::check_out(int fid) {
-//    request("POST", "/delegate", "No Content", header);
+void Client<HTTPS>::safe_delete(int fid) {
+    std::map<std::string, std::string> header;
+    header.insert(std::make_pair("UserName", username));    
+    request("POST", "/delegate", "No Content", header);
 }
 
 void Client<HTTPS>::end_session() {
-    
+    std::map<std::string, std::string> header;
+    header.insert(std::make_pair("UserName", username));    
+    // end session
 }

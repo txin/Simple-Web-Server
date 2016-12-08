@@ -85,6 +85,9 @@ public:
     }
     
     bool lookup_delegation(int t_fid, std::string &username);
+    bool lookup_check_out(int t_fid, std::string &t_username, std::string &file_name);
+    bool lookup_check_in(int t_fid, std::string &t_username, std::string &file_name);
+
     void print_metadata();
     void print_vector(std::string list_name, std::vector<std::string> &list);
     void print_users_list(std::unordered_map<std::string, Rights> &list);

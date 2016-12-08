@@ -97,3 +97,60 @@ void Global::update_rights(int t_fid, std::string clientname, Rights &t_rights,
     
     it->second.users_list.insert(std::make_pair(clientname, t_rights));
 }
+
+bool Global::lookup_check_out(int t_fid, std::string &username, std::string &file_name) {
+    bool result = false;
+    auto it = meta_map.find(t_fid);
+    if (it != meta_map.end()) {
+        Metadata t_data = it->second;
+        // check whether it is in the user list and delegation rights
+        auto it_2 =  t_data.users_list.find(username);
+        if (it_2 != t_data.users_list.end()) {
+            Rights t_rights = it_2->second;
+            std::chrono::time_point<std::chrono::system_clock> start;
+            start = std::chrono::system_clock::now();
+            std::time_t timestamp = std::chrono::system_clock::to_time_t(start);
+            double time_left = difftime(t_rights.expire_time, timestamp);
+            if (time_left < 0) {
+                // expired
+                return false;
+            } else {
+                bool condition = t_rights.is_owner ||
+                    (t_rights.is_delegate && t_rights.check_out);
+                result = condition;
+                if (condition) {
+                    file_name = t_data.uid_file_name;
+                }
+            }
+        }
+    }
+    
+    return result;
+}
+
+bool Global::lookup_check_in(int t_fid, std::string &username, std::string &file_name) {
+    bool result = true;
+    auto it = meta_map.find(t_fid);
+    if (it != meta_map.end()) {
+        Metadata t_data = it->second;
+        // check whether it is in the user list and delegation rights
+        auto it_2 =  t_data.users_list.find(username);
+        if (it_2 != t_data.users_list.end()) {
+            Rights t_rights = it_2->second;
+            std::chrono::time_point<std::chrono::system_clock> start;
+            start = std::chrono::system_clock::now();
+            std::time_t timestamp = std::chrono::system_clock::to_time_t(start);
+            double time_left = difftime(t_rights.expire_time, timestamp);
+            if (time_left < 0) {
+                // expired
+                return false;
+            } else {
+                bool condition = t_rights.is_owner ||
+                    (t_rights.is_delegate && t_rights.check_in);
+                result = condition;
+            }
+        }
+    }
+    return result;
+}
+

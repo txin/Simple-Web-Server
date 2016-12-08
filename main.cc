@@ -32,7 +32,6 @@ Global *global_ptr = 0;
 void default_resource_send(const HttpsServer &server,
                            const shared_ptr<HttpsServer::Response> &response,
                            const shared_ptr<ifstream> &ifs);
-
 int main() {
     if (!global_ptr) {
         global_ptr = new Global;
@@ -95,7 +94,6 @@ int main() {
         try {
             ptree pt;
             read_json(request->content, pt);
-
             string name=pt.get<string>("firstName")+" "+pt.get<string>("lastName");
 
             *response << "HTTP/1.1 200 OK\r\n"
@@ -155,29 +153,46 @@ int main() {
 
 
     //Get example simulating heavy work in a separate thread
-    server.resource["^/upload$"]["GET"]=[&server](shared_ptr<HttpsServer::Response> response,
+    server.resource["^/upload$"]["GET"]=[&server,
+                                         global_ptr](shared_ptr<HttpsServer::Response> response,
                                                   shared_ptr<HttpsServer::Request> request) {
 
 //         auto content=request->content.string();
         auto web_root_path=boost::filesystem::canonical("web");
-        auto file_name = request->content.string();
-        auto path = boost::filesystem::canonical(web_root_path/request->path/file_name);
-        auto ifs = make_shared<ifstream>();
-        
-        ifs->open(path.string(), ifstream::in | ios::binary);
-            
-        if(*ifs) {
-            BOOST_LOG_TRIVIAL(trace) << "File is opened";
-            ifs->seekg(0, ios::end);
-            auto length=ifs->tellg();
-            ifs->seekg(0, ios::beg);
-            *response << "HTTP/1.1 200 OK\r\nContent-Length: " << length << "\r\n\r\n";
-            BOOST_LOG_TRIVIAL(trace) << "File length" << length;
-            default_resource_send(server, response, ifs);
+        int fid = std::stoi(request->content.string());
+
+// look up metadata
+        std::string user_name;
+        for (auto& header: request->header) {
+            if (header.first == "UserName") {
+                user_name = header.second;
+            }
         }
-        else
-            throw invalid_argument("could not read file");
-        BOOST_LOG_TRIVIAL(trace) << "Download" << path;
+        std::string file_name;
+        bool allow_checkout = global_ptr->lookup_check_out(fid, user_name, file_name);
+        if (allow_checkout) {
+//            auto file_name = request->content.string();
+            auto path = boost::filesystem::canonical(web_root_path/request->path/file_name);
+            auto ifs = make_shared<ifstream>();
+
+            ifs->open(path.string(), ifstream::in | ios::binary);
+            if(*ifs) {
+                BOOST_LOG_TRIVIAL(trace) << "File is opened";
+                ifs->seekg(0, ios::end);
+                auto length=ifs->tellg();
+                ifs->seekg(0, ios::beg);
+                *response << "HTTP/1.1 200 OK\r\nContent-Length: " << length << "\r\n\r\n";
+                BOOST_LOG_TRIVIAL(trace) << "File length" << length;
+                default_resource_send(server, response, ifs);
+            }  else {
+                throw invalid_argument("could not read file");
+            }
+            BOOST_LOG_TRIVIAL(trace) << "Download" << path;            
+        } else {
+            std::string str = "No checkout";
+            *response << "HTTP/1.1 200 OK\r\nContent-Length: " << str.length() << "\r\n\r\n"
+            << str;
+        }
     };
 
     //Default GET-example. If no other matches, this anonymous function will be called. 
@@ -256,20 +271,17 @@ int main() {
     BOOST_LOG_TRIVIAL(trace) << "finished uploading files";
     global_ptr->print_metadata();
 
-
     Rights test_rights;
-
     test_rights.is_delegate = true;
     test_rights.check_in = true;
     Alice.delegate(0, "Bob", test_rights, 10000, false);
     
-// // download file
-//     std::string file_name = "test.jpg";
-//     auto r4 = client.request("GET", "/upload", file_name);
-//     write_file("local/" + file_name, r4);
-
-// Alice.check_out();
-// Alice.end_session()    ;
+// checkout file
+    int test_fid = 0;
+    Alice.check_out(test_fid);
+    //Alice.end_session();
+//    Bob.end_session();
+    
     server_thread.join();
     
     return 0;
