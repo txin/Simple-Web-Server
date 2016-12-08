@@ -7,15 +7,12 @@ int write_file(std::shared_ptr<HttpsServer::Request> request,
     //Retrieve string:
     BOOST_LOG_TRIVIAL(trace) << "Upload resources content size: "
                              << (request->content).size();
-    std::string file_name;
-    std::string uid_str;
+    std::string file_name, user_name;
     int security_flag;
-    int uid;
 
-    for(auto& header: request->header) {
-        if (header.first == "UID") {
-            uid_str = header.second;
-            uid = std::stoi(uid_str);
+    for (auto& header: request->header) {
+        if (header.first == "UserName") {
+            user_name = header.second;
         } else if (header.first == "FileName") {
             file_name = header.second;
         } else if (header.first == "SecurityFlag") {
@@ -23,7 +20,7 @@ int write_file(std::shared_ptr<HttpsServer::Request> request,
         }
         BOOST_LOG_TRIVIAL(trace) << header.first << ": " << header.second << "\n";
     }
-    std::string new_file = "web/upload/" + uid_str + '_' + file_name;
+    std::string new_file = "web/upload/" + user_name + '_' + file_name;
     // write file
     std::ofstream m_output_file;
     enum {Max_length = 40960};
@@ -45,7 +42,7 @@ int write_file(std::shared_ptr<HttpsServer::Request> request,
     
     BOOST_LOG_TRIVIAL(trace) << "Files have been uploaded.";
 // write metadata
-    Metadata t_meta(file_name, uid, security_flag);
+    Metadata t_meta(file_name, user_name, security_flag);
     t_meta.set_fid(global_ptr->get_fid());
     global_ptr->insert_meta(t_meta);
 

@@ -66,8 +66,9 @@ namespace SimpleWeb {
             }
         }
 
-        void check_in(std::string const& t_path, int uid, int flag);
-        void delegate(int fid, int uid, int time, bool propagation_flag);
+        void check_in(const std::string & t_path, const std::string &username, int flag);
+        void delegate(int fid, const std::string &client_name,
+                      int time, bool propagation_flag);
         void safe_delete(int fid);
         void check_out(int fid);
         

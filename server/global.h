@@ -12,23 +12,24 @@
 // Each file is associated with some metadata
 class Metadata {
 public:
-    Metadata(std::string t_request_file_name, int t_uid, int t_security_flag) {
+    Metadata(std::string t_request_file_name, std::string username, int t_security_flag) {
         request_file_name = t_request_file_name;
-        std::string new_file_name(std::to_string(t_uid) + '_' + t_request_file_name);
+        std::string new_file_name(username + '_' + t_request_file_name);
         uid_file_name = new_file_name;
         BOOST_LOG_TRIVIAL(trace) << "meta_data: uid_file_name: " << uid_file_name;
         security_flag = t_security_flag;
 
-        owner_list.push_back(t_uid);
-        check_in_list.push_back(t_uid);
-        check_out_list.push_back(t_uid);
+        owners_list.push_back(username);
+        check_in_list.push_back(username);
+        check_out_list.push_back(username);
     }
     std::string request_file_name;
     std::string uid_file_name; //unique
     int fid;
-    std::vector<int> owner_list; //uid
-    std::vector<int> check_in_list;
-    std::vector<int> check_out_list;
+    std::vector<std::string> owners_list; 
+    std::vector<std::string> check_in_list;
+    std::vector<std::string> check_out_list;
+    std::vector<std::string> delegates_list; 
     int security_flag; // 0, 1, 2
 
     void set_fid(int t_fid) {
@@ -59,7 +60,7 @@ public:
         return result;
     }
     void print_metadata();
-    void print_vector(std::string list_name, std::vector<int> &list);
+    void print_vector(std::string list_name, std::vector<std::string> &list);
 };
 
 extern Global *global_ptr;

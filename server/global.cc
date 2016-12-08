@@ -7,14 +7,15 @@ void Global::print_metadata() {
         std::ostringstream ss;
         ss << "[ FID: " << t_data.fid << ", " << "FileName: " << it->first << " ]";
         BOOST_LOG_TRIVIAL(trace) << ss.str();
-        print_vector("Owner_list", t_data.owner_list);
+        print_vector("Owners_list", t_data.owners_list);
         print_vector("Checkin_list", t_data.check_in_list);
         print_vector("Checkout_list", t_data.check_out_list);
+        print_vector("Delegates_list", t_data.delegates_list);
     }
 }
 
 void Global::print_vector(std::string list_name,
-                          std::vector<int> &list) {
+                          std::vector<std::string> &list) {
     std::ostringstream ss;
     std::string out_str;
     ss << list_name << ": [ ";
