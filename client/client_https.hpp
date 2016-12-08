@@ -36,6 +36,35 @@ namespace SimpleWeb {
             
             if(verify_file.size()>0)
                 context.load_verify_file(verify_file);
+
+            std::size_t found_0 = cert_file.find("/");
+            std::size_t found_1 = cert_file.find("_");
+            if (found_0 != std::string::npos && found_1 != std::string::npos) {
+                std::string folder_name = cert_file.substr(found_0 + 1,
+                                                           found_1 - found_0 - 1);
+                BOOST_LOG_TRIVIAL(trace) << folder_name;
+                create_folder(folder_name.c_str());
+            } else {
+                std::cerr << "Error: wrong certificate input.";
+                exit(1);
+            }
+        }
+
+        
+// create folder if it does not exsits
+        void create_folder(const char* name) {
+            // get working dir
+            char cwd[1024];
+            char path[1024];
+            getcwd(cwd, sizeof(cwd));
+            strcpy(path, cwd);
+            strcat(path, "/");
+            strcat(path, name);
+            puts(path);
+            struct stat st = {0};
+            if (stat(path, &st) == -1) {
+                mkdir(path, 0700);
+            }
         }
 
         void check_in(std::string const& t_path, int uid, int flag);

@@ -227,32 +227,29 @@ int main() {
     this_thread::sleep_for(chrono::seconds(1));
     
     //Client examples
-    //Second Client() parameter set to false: no certificate verification
-
-    HttpsClient client("localhost:8080", true,
-                       "certs/client_cert.pem", "certs/client_private.pem",
+    HttpsClient alice("localhost:8080", true,
+                       "certs/Alice_cert.pem", "certs/Alice_private.pem",
                        "certs/demoCA/cacert.pem");
 
-    auto r1=client.request("GET", "/match/123");
-    cout << r1->content.rdbuf() << endl;
-    string json_string="{\"firstName\": \"John\",\"lastName\": \"Smith\",\"age\": 25}";
-    auto r2=client.request("POST", "/string", json_string);
-    cout << r2->content.rdbuf() << endl;
-    auto r3=client.request("POST", "/json", json_string);
-    cout << r3->content.rdbuf() << endl;
+    HttpsClient bob("localhost:8080", true,
+                    "certs/Bob_cert.pem", "certs/Bob_private.pem",
+                       "certs/demoCA/cacert.pem");
 
-    // upload file
-    // uid
-    // security flag: 0 NONE, 1 CONFIDENTIALITY, 2, INTEGRITY
-    // TODO: same file_name
-    client.check_in("/home/tianxin/Documents/test.jpg", 0, 2);
-    // make request
-    BOOST_LOG_TRIVIAL(trace) << "finished uploading files";
+    HttpsClient eve("localhost:8080", true,
+                    "certs/Eve_cert.pem", "certs/Eve_private.pem",
+                       "certs/demoCA/cacert.pem");
+//     // upload file
+//     // uid
+//     // security flag: 0 NONE, 1 CONFIDENTIALITY, 2, INTEGRITY
+//     // TODO: same file_name
+//     client.check_in("/home/tianxin/Documents/test.jpg", 0, 2);
+//     // make request
+//     BOOST_LOG_TRIVIAL(trace) << "finished uploading files";
 
-// download file
-    std::string file_name = "test.jpg";
-    auto r4 = client.request("GET", "/upload", file_name);
-    write_file("local/" + file_name, r4);
+// // download file
+//     std::string file_name = "test.jpg";
+//     auto r4 = client.request("GET", "/upload", file_name);
+//     write_file("local/" + file_name, r4);
     
     server_thread.join();
     return 0;

@@ -89,3 +89,21 @@ int write_file(std::string const& path, std::shared_ptr<HttpsClient::Response> r
     }
     return 0;
 };
+
+// create folder if it does not exsits
+void create_folder(const char* name) {
+    // get working dir
+    char cwd[1024];
+    char path[1024];
+    getcwd(cwd, sizeof(cwd));
+    strcpy(path, cwd);
+    strcat(path, "/");
+    strcat(path, name);
+    puts(path);
+    struct stat st = {0};
+    if (stat(path, &st) == -1) {
+        mkdir(path, 0700);
+    }
+}
+
+
