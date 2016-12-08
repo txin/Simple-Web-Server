@@ -50,7 +50,6 @@ namespace SimpleWeb {
             }
         }
 
-        
 // create folder if it does not exsits
         void create_folder(const char* name) {
             // get working dir

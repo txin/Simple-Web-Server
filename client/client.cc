@@ -24,5 +24,4 @@ void Client<HTTPS>::check_in(std::string const& t_path, int uid, int flag) {
     header.insert(std::make_pair("FileName", p.filename().string()));
     header.insert(std::make_pair("SecurityFlag", std::to_string(flag)));
     request("POST", "/upload", m_source_file, header);
-    BOOST_LOG_TRIVIAL(trace) << "From open_file, finished uploading files";
 }

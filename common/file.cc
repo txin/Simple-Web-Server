@@ -46,6 +46,7 @@ int write_file(std::shared_ptr<HttpsServer::Request> request,
     BOOST_LOG_TRIVIAL(trace) << "Files have been uploaded.";
 // write metadata
     Metadata t_meta(file_name, uid, security_flag);
+    t_meta.set_fid(global_ptr->get_fid());
     global_ptr->insert_meta(t_meta);
 
     const std::string lookup_file = "test.jpg";

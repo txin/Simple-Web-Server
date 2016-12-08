@@ -227,24 +227,28 @@ int main() {
     this_thread::sleep_for(chrono::seconds(1));
     
     //Client examples
-    HttpsClient alice("localhost:8080", true,
+    HttpsClient Alice("localhost:8080", true,
                        "certs/Alice_cert.pem", "certs/Alice_private.pem",
                        "certs/demoCA/cacert.pem");
 
-    HttpsClient bob("localhost:8080", true,
+    HttpsClient Bob("localhost:8080", true,
                     "certs/Bob_cert.pem", "certs/Bob_private.pem",
                        "certs/demoCA/cacert.pem");
 
-    HttpsClient eve("localhost:8080", true,
+    HttpsClient Eve("localhost:8080", true,
                     "certs/Eve_cert.pem", "certs/Eve_private.pem",
                        "certs/demoCA/cacert.pem");
-//     // upload file
-//     // uid
-//     // security flag: 0 NONE, 1 CONFIDENTIALITY, 2, INTEGRITY
-//     // TODO: same file_name
-//     client.check_in("/home/tianxin/Documents/test.jpg", 0, 2);
-//     // make request
-//     BOOST_LOG_TRIVIAL(trace) << "finished uploading files";
+    // upload file
+    // uid
+    // security flag: 0 NONE, 1 CONFIDENTIALITY, 2, INTEGRITY
+    Alice.check_in("Alice/test.jpg", 0, 0);
+    Bob.check_in("Bob/test.jpg", 1, 1);
+    Eve.check_in("Eve/test.jpg", 2, 2);    
+
+// make request
+    BOOST_LOG_TRIVIAL(trace) << "finished uploading files";
+
+    global_ptr->print_metadata();
 
 // // download file
 //     std::string file_name = "test.jpg";
