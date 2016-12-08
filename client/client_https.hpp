@@ -67,8 +67,12 @@ namespace SimpleWeb {
         }
 
         void check_in(std::string const& t_path, int uid, int flag);
-        std::ifstream m_source_file;
+        void delegate(int fid, int uid, int time, bool propagation_flag);
+        void safe_delete(int fid);
+        void check_out(int fid);
+        
 
+        std::ifstream m_source_file;
         boost::asio::streambuf m_request;
         void send_file(const Client<HTTPS> &client, const std::shared_ptr<std::ifstream> &ifs);
         enum {Message_size = 1024};

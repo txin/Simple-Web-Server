@@ -241,10 +241,15 @@ int main() {
     // upload file
     // uid
     // security flag: 0 NONE, 1 CONFIDENTIALITY, 2, INTEGRITY
+    // TODO: change uid as part of start session.
     Alice.check_in("Alice/test.jpg", 0, 0);
     Bob.check_in("Bob/test.jpg", 1, 1);
     Eve.check_in("Eve/test.jpg", 2, 2);    
 
+    // time: 10000 secs
+    // Alice delegate Bob
+    Alice.delegate(0, 1, 10000, false);
+    
 // make request
     BOOST_LOG_TRIVIAL(trace) << "finished uploading files";
 
