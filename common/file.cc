@@ -106,4 +106,29 @@ void create_folder(const char* name) {
     }
 }
 
+bool verify_delegation_request(std::shared_ptr<HttpsServer::Request> request) {
+    bool result = false;
 
+    std::string user_name, client_name;
+    int fid;
+    
+    for (auto& header: request->header) {
+        if (header.first == "FID") {
+            fid = std::stoi(header.second);
+        } else if (header.first == "UserName") {
+            user_name = header.second;
+        } else if (header.first == "ClientName") {
+            client_name = header.second;
+        }
+    }
+
+    BOOST_LOG_TRIVIAL(trace) << "Delegation request:" << " FID: " << fid
+                             << ", from UserName: " << user_name
+                             << ", ClientName: " << client_name;
+    return result;
+    // First check metadata
+    // Then verify the delegation file
+    // load public file
+    // finally update the meta file for delegation list and also expiration time
+    // update metafile
+}

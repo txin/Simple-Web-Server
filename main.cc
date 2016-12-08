@@ -81,15 +81,13 @@ int main() {
 
     server.resource["^/delegate$"]["POST"]=[](shared_ptr<HttpsServer::Response> response,
                                               shared_ptr<HttpsServer::Request> request) {
-        auto content=request->content.string();
-        // for (auto& header: request->header) {
-        //     content_stream << header.first << ": " << header.second << "<br>";
-        // }
-
-//Retrieve string:
-
-        *response << "HTTP/1.1 200 OK\r\nContent-Length: " << content.length()
-        << "\r\n\r\n" << content;
+        thread work_thread([response, request] {
+                auto content = request->content.string();
+                bool result = verify_delegation_request(request);
+                *response << "HTTP/1.1 200 OK\r\nContent-Length: " << 1
+                          << "\r\n\r\n" << result;
+            });
+        work_thread.detach();
     };
 
     server.resource["^/json$"]["POST"]=[](shared_ptr<HttpsServer::Response> response,
@@ -254,18 +252,19 @@ int main() {
 
     // time: 10000 secs
     // Alice delegate Bob
-    Alice.delegate(0, "Bob", 10000, false);
-    
 // make request
     BOOST_LOG_TRIVIAL(trace) << "finished uploading files";
-
     global_ptr->print_metadata();
-
+    Alice.delegate(0, "Bob", 10000, false);
+    
 // // download file
 //     std::string file_name = "test.jpg";
 //     auto r4 = client.request("GET", "/upload", file_name);
 //     write_file("local/" + file_name, r4);
-    
+
+
+// Alice.check_out();
+// Alice.end_session()    ;
     server_thread.join();
     return 0;
 }

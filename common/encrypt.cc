@@ -139,11 +139,3 @@ void encrypt_file_2(const string &in_file, const RSA::PublicKey &pk) {
     BOOST_LOG_TRIVIAL(trace) << "Server: finished encrypting file (INTEGRITY): " << out_file;
 }
 
-// Write security flag, plain
-// 
-// void verify_delegation_request(request) {
-//     // First check metadata
-//     // Then verify the delegation file
-//     // load public file
-//     // finally update the meta file for delegation list and also expiration time
-// }

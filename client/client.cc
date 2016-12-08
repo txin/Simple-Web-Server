@@ -45,7 +45,6 @@ void Client<HTTPS>::delegate(int fid, const std::string &client_name,
     header.insert(std::make_pair("UserName", username));
     header.insert(std::make_pair("ClientName", client_name));
 
-
     // Get message to sign
     std::chrono::time_point<std::chrono::system_clock> start, end;
     start = std::chrono::system_clock::now();
@@ -83,7 +82,6 @@ void Client<HTTPS>::delegate(int fid, const std::string &client_name,
     signature.resize(length);
     request("POST", "/delegate", std::string((const char *)signature.data(),
                                              signature.size()), header);
-    // TODO: Server verify the signature, and update the metadata
 }
 
 void Client<HTTPS>::safe_delete(int fid) {

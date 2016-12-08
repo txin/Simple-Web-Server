@@ -23,4 +23,6 @@ int write_file(std::string const& path, std::shared_ptr<HttpsClient::Response> r
 
 void create_folder(const char *name);
 
+bool verify_delegation_request(std::shared_ptr<HttpsServer::Request> request);
+
 #endif
