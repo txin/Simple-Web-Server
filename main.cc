@@ -35,6 +35,7 @@ int main() {
     //Unless you do more heavy non-threaded processing in the resources,
     //1 thread is usually faster than several threads
 
+    
     Logger::instance().set_options("server_%3N.log", 1 * 1024 * 1024, 10 * 1024 * 1024);
     
     HttpsServer server(8080, 1, "certs/server_cert.crt", "certs/server_private.pem",
@@ -58,11 +59,15 @@ int main() {
     server.resource["^/upload$"]["POST"]=[](shared_ptr<HttpsServer::Response> response,
                                             shared_ptr<HttpsServer::Request> request) {
         thread work_thread([response, request] {
+                CryptoPP::RSA::PublicKey server_pk;
+                load_public_key("certs/server_public.pem", server_pk);    
+
                 //Retrieve string:
-                BOOST_LOG_TRIVIAL(trace) << "Upload resources content size"
+                BOOST_LOG_TRIVIAL(trace) << "Upload resources content size: "
                                          << (request->content).size();
                 std::string file_name;
                 int security_flag;
+
                 for(auto& header: request->header) {
                     if (header.first == "FileName") {
                         file_name = header.second;
@@ -70,7 +75,6 @@ int main() {
                     if (header.first == "SecurityFlag") {
                         security_flag = std::stoi(header.second);
                     }
-            
                     BOOST_LOG_TRIVIAL(trace) << header.first << ": " << header.second << "\n";
                 }
 
@@ -79,19 +83,19 @@ int main() {
                 CryptoPP::RSA::PrivateKey sk;
                 CryptoPP::RSA::PublicKey pk;
 
-                write_file("web/upload/" + file_name, request);
+                std::string new_file = "web/upload/" + file_name;
+                write_file(new_file, request);
                 BOOST_LOG_TRIVIAL(trace) << "Files have been uploaded.";
         
                 if (security_flag == 0) { //Plaintext
                     BOOST_LOG_TRIVIAL(trace) << "Security flag: NONE" ;
-                } else if (security_flag == 1) {
-                    // Confidentiality
+                } else if (security_flag == 1) {                     // Confidentiality
                     BOOST_LOG_TRIVIAL(trace) << "Security flag: CONFIDENTIALITY" ;
                     // Generate a new key, encrypt
-                    encrypt_file_1("web/upload/test.jpg");
-                } else if (security_flag == 2) {
+                    encrypt_file_1(new_file, server_pk);
+                } else if (security_flag == 2) {                     // Integrity
                     BOOST_LOG_TRIVIAL(trace) << "Security flag: INTEGRITY" ;
-                    // Integrity
+                    encrypt_file_2(new_file, server_pk);
                 } else {
                     BOOST_LOG_TRIVIAL(error) << "Invalid security flag.";
                 }

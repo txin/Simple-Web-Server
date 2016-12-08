@@ -1,6 +1,6 @@
 #include "encrypt.h"
-#include <boost/log/trivial.hpp>
 
+#include <boost/log/trivial.hpp>
 #include <string>
 #include <sstream>
 #include <fstream>
@@ -8,6 +8,7 @@
 
 using namespace CryptoPP;
 using namespace std;
+
 typedef unsigned char byte;
 
 void encrypt_file_CBC_AES(SecByteBlock key, SecByteBlock iv, const char *infile,
@@ -31,16 +32,15 @@ void encrypt_file_GCM_AES(SecByteBlock key, SecByteBlock iv, const char *infile,
 
 void decrypt_file_GCM_AES(SecByteBlock key, SecByteBlock iv, const char *infile,
                           const char* outfile ) {
-    GCM<AES>::Decryption dec;
+    CryptoPP::GCM<AES>::Decryption dec;
     dec.SetKeyWithIV(key, sizeof(key), iv, sizeof(iv));
     FileSource(infile, true, new AuthenticatedEncryptionFilter(dec, new FileSink(outfile)));
 }
 
-
 // encrypt with RSA public key
 void encrypt_string_RSA(const std::string &plain, const std::string &file,
-                      RandomNumberGenerator &rng,
-                      RSA::PublicKey &pk) {
+                        RandomNumberGenerator &rng,
+                        const RSA::PublicKey &pk) {
     RSAES<OAEP<SHA>>::Encryptor enc(pk);
     StringSource ss1(plain, true,
                      new PK_EncryptorFilter(rng, enc,
@@ -49,10 +49,10 @@ void encrypt_string_RSA(const std::string &plain, const std::string &file,
         );
 }
 
-// decrypt with RSA
+// decrypt with RSA secret key
 void decrypt_string_RSA(std::string &recovered, const std::string &file,
-                      RandomNumberGenerator &rng,
-                      RSA::PrivateKey &sk) {
+                        RandomNumberGenerator &rng,
+                        RSA::PrivateKey &sk) {
 
     RSAES<OAEP<SHA>>::Decryptor dec(sk);
     FileSource ss2(file.c_str(), true,
@@ -62,16 +62,16 @@ void decrypt_string_RSA(std::string &recovered, const std::string &file,
         ); 
 }
 
-void load_private_key(const std::string &file_name, RSA::PrivateKey &sk) {
+void load_private_key(const std::string &file_name, CryptoPP::RSA::PrivateKey &sk) {
     FileSource fs1(file_name.c_str(), true);
     PEM_Load(fs1, sk);
 
     AutoSeededRandomPool prng;
     bool valid = sk.Validate(prng, 3);
     if(!valid) {
-        cerr << "RSA private key is not valid" << endl; 
+        cerr << "Server: RSA private key is not valid" << endl; 
     } else {
-        BOOST_LOG_TRIVIAL(trace) << "RSA private key is valid";
+        BOOST_LOG_TRIVIAL(trace) << "Server: RSA private key is valid";
     }
 }
 
@@ -82,54 +82,60 @@ void load_public_key(const string &file_name, CryptoPP::RSA::PublicKey &pk) {
     AutoSeededRandomPool prng;
     bool valid = pk.Validate(prng, 3);
     if(!valid) {
-        cerr << "RSA public key is not valid" << endl; 
+        cerr << "Server: RSA public key is not valid." << endl; 
     } else {
-        BOOST_LOG_TRIVIAL(trace) << "RSA public key is valid";
+        BOOST_LOG_TRIVIAL(trace) << "Server: RSA public key is valid.";
     }
 }
 
-
+// Dump readable key
 void dump_key(SecByteBlock& ekey, string &key_str) {
     // Print them
     HexEncoder encoder(new StringSink(key_str));
-
     cout << "AES key: ";
     encoder.Put(ekey.data(), ekey.size());
     encoder.MessageEnd(); cout << endl;
 }
 
 
-// confidentiality.
-// TODO: already been renamed.
-// use default string
-void encrypt_file_1(const string &in_file) {
-    CryptoPP::RSA::PublicKey pk;
-    CryptoPP::RSA::PrivateKey sk;    
-
-    load_public_key("certs/server_public.pem", pk);
-    load_private_key("certs/server_private.pem", sk);
-
+// encrypt key and store IV as normal binary file.
+void generate_key_store(const string &in_file, SecByteBlock &key, SecByteBlock &iv,
+                        const RSA::PublicKey &pk) {
     AutoSeededRandomPool rnd;
-// Generate a random key for AES
-    SecByteBlock key(0x00, AES::DEFAULT_KEYLENGTH);
-    rnd.GenerateBlock(key, key.size());
 
-// Generate a random IV
-    SecByteBlock iv(0x00, AES::BLOCKSIZE);
+    rnd.GenerateBlock(key, key.size());
     rnd.GenerateBlock(iv, iv.size());
-    // TODO: crop out the name before the dot
-    const std::string out_file = in_file + ".bin";
-    encrypt_file_CBC_AES(key, iv, in_file.c_str(), out_file.c_str());
-    BOOST_LOG_TRIVIAL(trace) << "Finished encrypting file: " << out_file;
-    // encrypt the secret key
-    // store key, and iv seperately
+
+    // encrypt the secret key with RSA
     const std::string key_out_file = in_file + ".key";
-    std::string token = std::string((const char*)key.data(), key.size());
-    encrypt_string_RSA(in_file, key_out_file, rnd, pk);
-    BOOST_LOG_TRIVIAL(trace) << "Finished encrypting key: " << key_out_file;
+    std::string key_str = std::string((const char*)key.data(), key.size());
+    const std::string iv_file = in_file + ".iv";
+
+    std::string iv_str = std::string((const char*)iv.data(), iv.size());
+    StringSource ss(iv_str, true /* pump all */, new FileSink(iv_file.c_str(), true));
+    BOOST_LOG_TRIVIAL(trace) << "Server: finished writing iv: " << iv_file;
+
+    encrypt_string_RSA(key_str, key_out_file, rnd, pk);
+    BOOST_LOG_TRIVIAL(trace) << "Server: finished encrypting key: " << key_out_file;
 }
 
-// integrity
-void encrypt_file_2(const string &file_name) {
-    
+// Confidentiality
+void encrypt_file_1(const string &in_file, const RSA::PublicKey &pk) {
+    SecByteBlock key(0x00, AES::DEFAULT_KEYLENGTH);
+    SecByteBlock iv(0x00, AES::BLOCKSIZE);
+    generate_key_store(in_file, key, iv, pk);
+    const std::string out_file = in_file + ".bin";
+    encrypt_file_CBC_AES(key, iv, in_file.c_str(), out_file.c_str());
+    BOOST_LOG_TRIVIAL(trace) << "Server: finished encrypting file (CONFIDENTIALITY): "
+                             << out_file;
+}
+
+// Integrity
+void encrypt_file_2(const string &in_file, const RSA::PublicKey &pk) {
+    SecByteBlock key(0x00, AES::DEFAULT_KEYLENGTH);
+    SecByteBlock iv(0x00, AES::BLOCKSIZE);
+    generate_key_store(in_file, key, iv, pk);
+    const std::string out_file = in_file + ".bin";
+    encrypt_file_GCM_AES(key, iv, in_file.c_str(), out_file.c_str());
+    BOOST_LOG_TRIVIAL(trace) << "Server: finished encrypting file (INTEGRITY): " << out_file;
 }

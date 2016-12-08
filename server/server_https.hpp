@@ -5,8 +5,10 @@
 #include <iostream>
 
 #include "server_http.hpp"
-#include <boost/asio/ssl.hpp>
+#include "../common/encrypt.h"
 
+#include <boost/asio/ssl.hpp>
+#include <cryptopp/rsa.h>
 
 namespace SimpleWeb {
     typedef boost::asio::ssl::stream<boost::asio::ip::tcp::socket> HTTPS;    
@@ -27,8 +29,10 @@ namespace SimpleWeb {
             context.use_private_key_file(private_key_file, boost::asio::ssl::context::pem);
             context.set_default_verify_paths();
             
-            if(verify_file.size()>0)
+            if (verify_file.size() > 0) {
                 context.load_verify_file(verify_file);
+            }
+
         }
 
     protected:
@@ -40,7 +44,7 @@ namespace SimpleWeb {
         std::ofstream m_output_file;
         size_t m_file_size;
         std::string m_file_name;
-
+        
         void accept() {
             //Create new socket for this connection
             //Shared_ptr is used to pass temporary objects to the asynchronous functions

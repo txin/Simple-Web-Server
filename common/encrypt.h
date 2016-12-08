@@ -57,11 +57,13 @@ void decrypt_string_RSA(std::string &recovered, const std::string &file,
                       CryptoPP::RSA::PrivateKey &sk);
 
 void encrypt_string_RSA(const std::string &plain, const std::string &file,
-                      CryptoPP::RandomNumberGenerator &rng,
-                      CryptoPP::RSA::PublicKey &pk);
+                        CryptoPP::RandomNumberGenerator &rng,
+                        const CryptoPP::RSA::PublicKey &pk);
 
-void encrypt_file_1(const std::string &in_file);
+void generate_key_store(const std::string &in_file, CryptoPP::SecByteBlock &key,
+                        CryptoPP::SecByteBlock &iv, const CryptoPP::RSA::PublicKey &pk);
 
-void encrypt_file_2(const std::string &in_file);
+void encrypt_file_1(const std::string &in_file, const CryptoPP::RSA::PublicKey &pk);
+void encrypt_file_2(const std::string &in_file, const CryptoPP::RSA::PublicKey &pk);
 
 #endif
