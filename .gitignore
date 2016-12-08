@@ -21,3 +21,5 @@ parse_test
 *.bin
 *.key
 *.pem
+*.o
+*.out

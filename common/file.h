@@ -6,6 +6,8 @@
 #include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
 
+#include "../client/client_https.hpp"
+
 #include "../server/server_http.hpp"
 #include "../server/server_https.hpp"
 
@@ -15,53 +17,25 @@ typedef SimpleWeb::Client<SimpleWeb::HTTPS> HttpsClient;
 
 enum SecurityFlag{CONFIDENTIALITY, INTEGRITY, NONE};
 
-int write_file(std::string const& path, std::shared_ptr<HttpsServer::Request> request) {
-    // write file
-    std::ofstream m_output_file;
-    enum {Max_length = 40960};
-    std::array<char, Max_length> m_buf;
+int write_file(std::shared_ptr<HttpsServer::Request> request,
+               const CryptoPP::RSA::PublicKey &server_pk);
+int write_file(std::string const& path, std::shared_ptr<HttpsClient::Response> response);
 
-//    BOOST_LOG_TRIVIAL(trace) << "filename: " << file_name;
-    m_output_file.open(path, std::ios_base::binary);
-//    m_output_file.open("web/upload/" + file_name, std::ios_base::binary);
-
-    do {
-        request->content.read(m_buf.data(), m_buf.size());
-        BOOST_LOG_TRIVIAL(trace) << __func__ << " write " << request->content.gcount() <<
-            " bytes.";
-        m_output_file.write(m_buf.data(), request->content.gcount());
-    } while (request->content.gcount() > 0);
-        
-    if (!m_output_file){
-        BOOST_LOG_TRIVIAL(error) << __LINE__ << ": Failed to create: "   << path;
-        return -1;
+// Each file is associated with some metadata
+class Metadata {
+private:
+    std::string request_file_name;
+    std::string uid_file_name; //unique
+    std::vector<int> owner_list; //uid
+    int security_flag; // 0, 1, 2
+    
+public:
+    Metadata(std::string t_request_file_name, int t_uid, int t_security_flag) {
+        request_file_name = t_request_file_name;
+        std::string new_file_name(std::to_string(t_uid) + '_' + t_request_file_name);
+        uid_file_name = new_file_name;
+        BOOST_LOG_TRIVIAL(trace) << "meta_data: uid_file_name: " << uid_file_name;
+        security_flag = t_security_flag;
+        owner_list.push_back(t_uid);
     }
-    return 0;
 };
-
-
-int write_file(std::string const& path, std::shared_ptr<HttpsClient::Response> response) {
-    // write file
-    std::ofstream m_output_file;
-    enum {Max_length = 40960};
-    std::array<char, Max_length> m_buf;
-
-//    BOOST_LOG_TRIVIAL(trace) << "filename: " << file_name;
-    m_output_file.open(path, std::ios_base::binary);
-//    m_output_file.open("web/upload/" + file_name, std::ios_base::binary);
-
-    do {
-        response->content.read(m_buf.data(), m_buf.size());
-        BOOST_LOG_TRIVIAL(trace) << __func__ << " write " << response->content.gcount() <<
-            " bytes.";
-        m_output_file.write(m_buf.data(), response->content.gcount());
-    } while (response->content.gcount() > 0);
-        
-    if (!m_output_file){
-        BOOST_LOG_TRIVIAL(error) << __LINE__ << ": Failed to create: "   << path;
-        return -1;
-    }
-    return 0;
-};
-
-

@@ -63,38 +63,7 @@ int main() {
         (shared_ptr<HttpsServer::Response> response,
                                             shared_ptr<HttpsServer::Request> request) {
         thread work_thread([response, request, server_pk] {
-                //Retrieve string:
-                BOOST_LOG_TRIVIAL(trace) << "Upload resources content size: "
-                                         << (request->content).size();
-                std::string file_name;
-                int security_flag;
-
-                for(auto& header: request->header) {
-                    if (header.first == "FileName") {
-                        file_name = header.second;
-                    }
-                    if (header.first == "SecurityFlag") {
-                        security_flag = std::stoi(header.second);
-                    }
-                    BOOST_LOG_TRIVIAL(trace) << header.first << ": " << header.second << "\n";
-                }
-
-                std::string new_file = "web/upload/" + file_name;
-                write_file(new_file, request);
-                BOOST_LOG_TRIVIAL(trace) << "Files have been uploaded.";
-        
-                if (security_flag == 0) { //Plaintext
-                    BOOST_LOG_TRIVIAL(trace) << "Security flag: NONE" ;
-                } else if (security_flag == 1) {                     // Confidentiality
-                    BOOST_LOG_TRIVIAL(trace) << "Security flag: CONFIDENTIALITY" ;
-                    // Generate a new key, encrypt
-                    encrypt_file_1(new_file, server_pk);
-                } else if (security_flag == 2) {                     // Integrity
-                    BOOST_LOG_TRIVIAL(trace) << "Security flag: INTEGRITY" ;
-                    encrypt_file_2(new_file, server_pk);
-                } else {
-                    BOOST_LOG_TRIVIAL(error) << "Invalid security flag.";
-                }
+                write_file(request, server_pk);
                 string str = "OK";
                 *response << "HTTP/1.1 200 OK\r\nContent-Length: " << str.length()
                           << "\r\n\r\n" << str;
