@@ -40,11 +40,9 @@ int main() {
     //HTTPS-server at port 8080 using 1 thread
     //Unless you do more heavy non-threaded processing in the resources,
     //1 thread is usually faster than several threads
-
     
     Logger::instance().set_options("server_%3N.log", 1 * 1024 * 1024, 10 * 1024 * 1024);
-    
-    HttpsServer server(8080, 1, "certs/server_cert.crt", "certs/server_private.pem",
+    HttpsServer server(8081, 1, "certs/server_cert.crt", "certs/server_private.pem",
                        5, 300, "certs/demoCA/cacert.pem");
 
 //Add resources using path-regex and method-string, and an anonymous function
@@ -78,7 +76,7 @@ int main() {
         work_thread.detach();
     };
 
-    server.resource["^/delete"]["POST"]=[global_ptr]
+    server.resource["^/delete"]["POST"]=[]
         (shared_ptr<HttpsServer::Response> response,
          shared_ptr<HttpsServer::Request> request) {
 //         auto content=request->content.string();
@@ -95,7 +93,6 @@ int main() {
         std::string file_name;
         bool allow_delete = global_ptr->lookup_delete(fid, user_name, file_name);
         if (allow_delete) {
-            BOOST_LOG_TRIVIAL(trace) << "Removing file!!!!!!!!!! ";
             string path_upload = "upload";
             auto path = boost::filesystem::canonical(web_root_path/path_upload/file_name);
             BOOST_LOG_TRIVIAL(trace) << "File removing: " << path;            
@@ -193,11 +190,8 @@ int main() {
 
 
     //Get example simulating heavy work in a separate thread
-    server.resource["^/upload$"]["GET"]=[&server,
-                                         global_ptr](shared_ptr<HttpsServer::Response> response,
+    server.resource["^/upload$"]["GET"]=[&server](shared_ptr<HttpsServer::Response> response,
                                                   shared_ptr<HttpsServer::Request> request) {
-
-//         auto content=request->content.string();
         auto web_root_path=boost::filesystem::canonical("web");
         int fid = std::stoi(request->content.string());
 
@@ -286,15 +280,15 @@ int main() {
     this_thread::sleep_for(chrono::seconds(1));
     
     //Client examples
-    HttpsClient Alice("localhost:8080", true,
+    HttpsClient Alice("localhost:8081", true,
                        "certs/Alice_cert.pem", "certs/Alice_private.pem",
                        "certs/demoCA/cacert.pem");
 
-    HttpsClient Bob("localhost:8080", true,
+    HttpsClient Bob("localhost:8081", true,
                     "certs/Bob_cert.pem", "certs/Bob_private.pem",
                        "certs/demoCA/cacert.pem");
 
-    HttpsClient Eve("localhost:8080", true,
+    HttpsClient Eve("localhost:8081", true,
                     "certs/Eve_cert.pem", "certs/Eve_private.pem",
                        "certs/demoCA/cacert.pem");
     // upload file
@@ -302,8 +296,12 @@ int main() {
     // security flag: 0 NONE, 1 CONFIDENTIALITY, 2, INTEGRITY
     // TODO: change uid as part of start session.
     Alice.check_in("Alice/test.jpg", "Alice", 0);
-    Bob.check_in("Bob/test.jpg", "Bob", 1);
-    Eve.check_in("Eve/test.jpg", "Eve", 2);    
+    Alice.check_in("Alice/a.txt", "Alice", 0);
+    
+//    Bob.check_in("Bob/test.jpg", "Bob", 1);
+    Bob.check_in("Bob/b.txt", "Bob", 1);
+//    Eve.check_in("Eve/test.jpg", "Eve", 2);
+    Eve.check_in("Eve/c.txt", "Eve", 2);
 
     // time: 10000 secs
     // Alice delegate Bob
@@ -315,7 +313,7 @@ int main() {
     test_rights.is_delegate = true;
     test_rights.check_in = true;
     Alice.delegate(0, "Bob", test_rights, 10000, false);
-    
+    Alice.check_out(2);
 // checkout file
     int test_fid = 0;
     Alice.check_out(test_fid);
@@ -323,7 +321,6 @@ int main() {
     Alice.close();
     
     server_thread.join();
-    
     return 0;
 }
 

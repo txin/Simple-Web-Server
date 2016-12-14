@@ -19,11 +19,6 @@
 
 using namespace SimpleWeb;
 
-void Client<HTTPS>::start_session(const std::string &hostname) {
-    
-}
-
-
 void Client<HTTPS>::check_in(std::string const& t_path,
                              const std::string &username, int flag) {
     m_source_file.open(t_path, std::ios_base::binary | std::ios_base::ate);
@@ -38,6 +33,7 @@ void Client<HTTPS>::check_in(std::string const& t_path,
     header.insert(std::make_pair("FileName", p.filename().string()));
     header.insert(std::make_pair("SecurityFlag", std::to_string(flag)));
     request("POST", "/upload", m_source_file, header);
+    m_source_file.close();
 }
 
 void Client<HTTPS>::delegate(int fid, const std::string &client_name,

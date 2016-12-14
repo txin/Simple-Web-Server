@@ -79,11 +79,8 @@ void Global::update_rights(int t_fid, std::string clientname, Rights &t_rights,
     auto it = meta_map.find(t_fid);
 
     // definitely exists
-
     Metadata t_data = it->second;
-    auto it_2 = t_data.users_list.find(clientname);
     t_rights.username = clientname;
-
 
     std::chrono::time_point<std::chrono::system_clock> start, end;
     start = std::chrono::system_clock::now();
